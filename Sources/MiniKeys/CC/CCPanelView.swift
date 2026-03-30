@@ -6,7 +6,7 @@ struct CCPanelView: View {
 
     @State private var editMode = false
     @State private var selectedControlIDs: Set<UUID> = []
-    @State private var controlScale: CGFloat = 1.2
+    @State private var controlScale: CGFloat = 1.0
 
     // For inline editor: show editor for the last-selected control
     private var primarySelectedID: UUID? {
@@ -114,19 +114,23 @@ struct CCPanelView: View {
                 .buttonStyle(.plain)
 
                 // Zoom controls
-                HStack(spacing: 2) {
-                    Button(action: { controlScale = max(0.7, controlScale - 0.15) }) {
+                HStack(spacing: 4) {
+                    Button(action: { controlScale = max(0.7, controlScale - 0.1) }) {
                         Image(systemName: "minus.magnifyingglass")
-                            .font(.system(size: 10))
                     }
                     .buttonStyle(.plain)
-                    Button(action: { controlScale = min(2.0, controlScale + 0.15) }) {
+
+                    Text("\(Int(controlScale * 100))%")
+                        .frame(width: 32)
+
+                    Button(action: { controlScale = min(1.5, controlScale + 0.1) }) {
                         Image(systemName: "plus.magnifyingglass")
-                            .font(.system(size: 10))
                     }
                     .buttonStyle(.plain)
                 }
+                .font(.system(size: 10))
                 .foregroundStyle(.secondary)
+                .fixedSize()
             }
             .padding(.horizontal, 4)
 

@@ -67,7 +67,7 @@ struct CCControlView: View {
         case .slider: 52
         case .button: 72
         case .toggle: 72
-        case .select: max(82, control.options.count > 6 ? 140 : 82)
+        case .select: 82
         case .adsr: 172
         case .xyPad: 160
         }
@@ -79,8 +79,11 @@ struct CCControlView: View {
         case .button: return 110
         case .toggle: return 110
         case .select:
-            let rows = control.options.count > 6 ? (control.options.count + 1) / 2 : control.options.count
-            return CGFloat(32 + rows * 20)
+            if control.options.count <= 5 {
+                return CGFloat(32 + control.options.count * 22)
+            } else {
+                return 80 // compact dropdown
+            }
         case .adsr: return 150
         case .xyPad: return 180
         }
@@ -335,9 +338,12 @@ struct SelectControlView: View {
     @Binding var control: CCControl
     let onValueChange: (CCControl, UInt8) -> Void
 
-    private var selectedIndex: Int? {
-        guard !control.options.isEmpty else { return nil }
-        return control.options.firstIndex(where: { $0.id == control.selectedOptionID }) ?? 0
+    private var selectedLabel: String {
+        if let id = control.selectedOptionID,
+           let opt = control.options.first(where: { $0.id == id }) {
+            return opt.label
+        }
+        return control.options.first?.label ?? "—"
     }
 
     var body: some View {
@@ -358,7 +364,8 @@ struct SelectControlView: View {
                     .font(.system(size: 9))
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity)
-            } else if control.options.count <= 6 {
+            } else if control.options.count <= 5 {
+                // Few options: show as pills
                 VStack(spacing: 3) {
                     ForEach(control.options) { option in
                         SelectPill(
@@ -374,22 +381,45 @@ struct SelectControlView: View {
                     }
                 }
             } else {
-                // Grid for many options
-                let columns = [GridItem(.flexible(), spacing: 3), GridItem(.flexible(), spacing: 3)]
-                LazyVGrid(columns: columns, spacing: 3) {
+                // Many options: compact dropdown
+                Menu {
                     ForEach(control.options) { option in
-                        SelectPill(
-                            label: option.label,
-                            value: option.value,
-                            isSelected: option.id == control.selectedOptionID,
-                            onTap: {
-                                control.selectedOptionID = option.id
-                                control.currentValue = option.value
-                                onValueChange(control, option.value)
+                        Button {
+                            control.selectedOptionID = option.id
+                            control.currentValue = option.value
+                            onValueChange(control, option.value)
+                        } label: {
+                            HStack {
+                                if option.id == control.selectedOptionID {
+                                    Image(systemName: "checkmark")
+                                }
+                                Text(option.label)
+                                Spacer()
+                                Text("\(option.value)")
                             }
-                        )
+                        }
                     }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selectedLabel)
+                            .font(.system(size: 9, weight: .medium))
+                            .lineLimit(1)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 7))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color.accentColor.opacity(0.15))
+                    )
                 }
+                .menuStyle(.borderlessButton)
+
+                Text("\(control.options.count) options")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
             }
         }
         .padding(4)

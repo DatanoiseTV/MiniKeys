@@ -398,6 +398,12 @@ struct ToolPill: View {
 
     var body: some View {
         HStack(spacing: 4) {
+            // On/off indicator — click to toggle
+            Circle()
+                .fill(isActive ? Color.accentColor : Color.gray.opacity(0.3))
+                .frame(width: 7, height: 7)
+                .onTapGesture { onToggleActive() }
+
             Image(systemName: tool.icon)
                 .font(.system(size: 9))
 
@@ -408,7 +414,7 @@ struct ToolPill: View {
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 5)
-                .fill(isActive ? Color.accentColor.opacity(0.25) : Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                .fill(isActive ? Color.accentColor.opacity(0.15) : Color(nsColor: .controlBackgroundColor).opacity(0.5))
                 .overlay(
                     RoundedRectangle(cornerRadius: 5)
                         .stroke(isExpanded ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1)
@@ -416,12 +422,6 @@ struct ToolPill: View {
         )
         .foregroundStyle(isActive ? Color.accentColor : .secondary)
         .onTapGesture { onToggleExpand() }
-        .contextMenu {
-            Button(isActive ? "Disable" : "Enable") { onToggleActive() }
-        }
-        .simultaneousGesture(
-            TapGesture(count: 2).onEnded { onToggleActive() }
-        )
     }
 }
 
