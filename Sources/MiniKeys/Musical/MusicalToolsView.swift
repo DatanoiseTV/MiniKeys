@@ -73,6 +73,12 @@ struct MusicalToolsView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
+        .onChange(of: metronome.enabled) { _, on in if on { withAnimation(.easeInOut(duration: 0.15)) { expandedTool = .metronome } } }
+        .onChange(of: quantizer.enabled) { _, on in if on { withAnimation(.easeInOut(duration: 0.15)) { expandedTool = .quantize } } }
+        .onChange(of: scaleEngine.enabled) { _, on in if on { withAnimation(.easeInOut(duration: 0.15)) { expandedTool = .scale } } }
+        .onChange(of: arpeggiator.enabled) { _, on in if on { withAnimation(.easeInOut(duration: 0.15)) { expandedTool = .arp } } }
+        .onChange(of: chordEngine.enabled) { _, on in if on { withAnimation(.easeInOut(duration: 0.15)) { expandedTool = .chord } } }
+        .onChange(of: gamepadManager.isActive) { _, on in if on { withAnimation(.easeInOut(duration: 0.15)) { expandedTool = .gamepad } } }
     }
 
     // MARK: - Active state
