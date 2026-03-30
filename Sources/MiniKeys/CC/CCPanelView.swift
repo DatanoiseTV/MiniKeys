@@ -118,8 +118,9 @@ struct CCPanelView: View {
             .background(Color(nsColor: .windowBackgroundColor))
 
             // Controls — wrapping flow layout
+            GeometryReader { geo in
             ScrollView(.vertical, showsIndicators: true) {
-                FlowLayout(spacing: 8) {
+                FlowLayout(spacing: 8, containerWidth: geo.size.width - 16) {
                     // Groups
                     ForEach(layout.groups) { group in
                         GroupView(
@@ -157,6 +158,7 @@ struct CCPanelView: View {
                 .padding(8)
             }
             .frame(minHeight: 80)
+            } // GeometryReader
         }
 
         // Inline editor outside the scroll, pinned at bottom of panel
@@ -574,6 +576,7 @@ struct ADSRCCEditor: View {
 
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
+    var containerWidth: CGFloat? = nil
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let result = arrange(proposal: proposal, subviews: subviews)
@@ -591,7 +594,7 @@ struct FlowLayout: Layout {
     }
 
     private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (positions: [CGPoint], size: CGSize) {
-        let maxWidth = proposal.width ?? .infinity
+        let maxWidth = containerWidth ?? proposal.width ?? .infinity
         var positions: [CGPoint] = []
         var x: CGFloat = 0
         var y: CGFloat = 0
