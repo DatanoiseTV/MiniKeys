@@ -3,7 +3,6 @@ import Foundation
 import Observation
 
 @Observable
-@MainActor
 final class Metronome {
     var enabled = false {
         didSet {
@@ -103,7 +102,7 @@ final class Metronome {
         let timer = DispatchSource.makeTimerSource(queue: timerQueue)
         timer.schedule(deadline: .now() + delay)
         timer.setEventHandler { [weak self] in
-            Task { @MainActor in
+            DispatchQueue.main.async {
                 guard let self, self.enabled else { return }
                 self.currentBeat = (self.currentBeat + 1) % self.beatsPerBar
                 self.playClick()

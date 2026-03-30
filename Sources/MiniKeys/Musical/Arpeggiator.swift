@@ -77,7 +77,6 @@ enum GateStep: Int, Codable {
 }
 
 @Observable
-@MainActor
 final class Arpeggiator {
     var enabled = false
     var mode: ArpMode = .up

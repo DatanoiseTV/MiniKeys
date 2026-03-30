@@ -38,7 +38,6 @@ enum QuantizeDivision: String, CaseIterable, Codable {
 }
 
 @Observable
-@MainActor
 final class LiveQuantizer {
     var enabled = false
     var division: QuantizeDivision = .sixteenth

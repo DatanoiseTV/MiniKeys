@@ -105,7 +105,6 @@ enum ScaleForceMode: String, CaseIterable, Codable {
 }
 
 @Observable
-@MainActor
 final class ScaleEngine {
     var enabled = false { didSet { invalidateCache() } }
     var scale: ScaleType = .major { didSet { invalidateCache() } }

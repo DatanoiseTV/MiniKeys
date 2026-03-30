@@ -2,7 +2,6 @@ import Foundation
 import Observation
 
 @Observable
-@MainActor
 final class KeyboardState {
     var octave: Int = 4
     var velocity: UInt8 = 100

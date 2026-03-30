@@ -54,7 +54,6 @@ enum ChordType: String, CaseIterable, Codable {
 }
 
 @Observable
-@MainActor
 final class ChordEngine {
     var enabled = false
     var chordType: ChordType = .major
