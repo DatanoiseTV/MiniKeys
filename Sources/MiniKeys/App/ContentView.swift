@@ -144,6 +144,22 @@ struct ContentView: View {
                     sendControlValue(control: layout.controls[idx], value: value)
                 }
             }
+
+            // Wire incoming MIDI CC to update on-screen controls (bidirectional feedback)
+            midiEngine.onExternalCC = { [self] (cc: UInt8, value: UInt8) in
+                updateControlFromMIDI(cc: cc, value: value)
+            }
+
+            // Wire incoming NRPN to update NRPN-mode controls
+            midiEngine.onExternalNRPN = { [self] (msb: UInt8, lsb: UInt8, value: UInt8) in
+                for i in layout.controls.indices {
+                    if layout.controls[i].messageType == .nrpn
+                        && layout.controls[i].nrpnMSB == msb
+                        && layout.controls[i].nrpnLSB == lsb {
+                        layout.controls[i].currentValue = value
+                    }
+                }
+            }
         }
         .onDisappear {
             keyboardMonitor?.stop()
@@ -154,6 +170,50 @@ struct ContentView: View {
             DeviceBrowserView(dbManager: dbManager) { deviceLayout, deviceName in
                 layout = deviceLayout
                 presetManager.save(name: deviceName, layout: deviceLayout)
+            }
+        }
+    }
+
+    /// Update on-screen controls when MIDI CC is received from external input
+    @MainActor private func updateControlFromMIDI(cc: UInt8, value: UInt8) {
+        // Update all controls that match this CC number
+        for i in layout.controls.indices {
+            let control = layout.controls[i]
+
+            // Standard CC match
+            if control.messageType == .cc && control.ccNumber == cc {
+                switch control.type {
+                case .knob, .slider:
+                    layout.controls[i].currentValue = value
+                case .toggle:
+                    layout.controls[i].isOn = value >= 64
+                    layout.controls[i].currentValue = value >= 64 ? control.maxValue : control.minValue
+                case .button:
+                    layout.controls[i].currentValue = value
+                case .select:
+                    // Find the closest option
+                    if let closest = control.options.min(by: {
+                        abs(Int($0.value) - Int(value)) < abs(Int($1.value) - Int(value))
+                    }) {
+                        layout.controls[i].selectedOptionID = closest.id
+                        layout.controls[i].currentValue = closest.value
+                    }
+                case .xyPad:
+                    // X axis
+                    layout.controls[i].currentValue = value
+                case .adsr:
+                    // Match individual ADSR CCs
+                    for p in 0..<4 {
+                        if control.adsrCCs[p] == cc {
+                            layout.controls[i].adsrValues[p] = value
+                        }
+                    }
+                }
+            }
+
+            // X/Y pad Y axis
+            if control.type == .xyPad && control.yCCNumber == cc {
+                layout.controls[i].yValue = value
             }
         }
     }

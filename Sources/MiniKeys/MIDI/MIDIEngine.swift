@@ -31,10 +31,15 @@ final class MIDIEngine {
     }
     var channel: UInt8 = 0
 
-    /// Callback for incoming MIDI note-on/off from external input
-    var onExternalNoteOn: ((UInt8, UInt8) -> Void)?   // (note, velocity)
-    var onExternalNoteOff: ((UInt8) -> Void)?          // (note)
-    var onExternalCC: ((UInt8, UInt8) -> Void)?         // (cc, value)
+    /// Callbacks for incoming MIDI from external input
+    var onExternalNoteOn: ((UInt8, UInt8) -> Void)?    // (note, velocity)
+    var onExternalNoteOff: ((UInt8) -> Void)?           // (note)
+    var onExternalCC: ((UInt8, UInt8) -> Void)?          // (cc, value)
+    var onExternalNRPN: ((UInt8, UInt8, UInt8) -> Void)? // (msb, lsb, value)
+
+    // NRPN state tracking for incoming messages
+    @ObservationIgnored private var _nrpnMSB: UInt8 = 0
+    @ObservationIgnored private var _nrpnLSB: UInt8 = 0
 
     init() {
         setupMIDI()
@@ -128,7 +133,20 @@ final class MIDIEngine {
                         case 0x80: // Note Off
                             self.onExternalNoteOff?(data1)
                         case 0xB0: // CC
-                            self.onExternalCC?(data1, data2)
+                            // Track NRPN sequence: CC99=MSB, CC98=LSB, CC6=value
+                            switch data1 {
+                            case 99: self._nrpnMSB = data2
+                            case 98: self._nrpnLSB = data2
+                            case 6:
+                                // CC6 after CC99+CC98 = NRPN value
+                                if self._nrpnMSB != 0 || self._nrpnLSB != 0 {
+                                    self.onExternalNRPN?(self._nrpnMSB, self._nrpnLSB, data2)
+                                } else {
+                                    self.onExternalCC?(data1, data2)
+                                }
+                            default:
+                                self.onExternalCC?(data1, data2)
+                            }
                         default:
                             break
                         }
