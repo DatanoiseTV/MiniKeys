@@ -370,7 +370,7 @@ struct CCInlineEditor: View {
                             Label(type.displayName, systemImage: type.icon).tag(type)
                         }
                     }
-                    .frame(width: 90)
+                    .fixedSize()
                 }
 
                 LabeledField("Label") {
@@ -386,7 +386,7 @@ struct CCInlineEditor: View {
                             Text(group.label).tag(group.id as UUID?)
                         }
                     }
-                    .frame(width: 90)
+                    .fixedSize()
                 }
 
                 Spacer()
@@ -406,7 +406,7 @@ struct CCInlineEditor: View {
                             Text("CC").tag(CCMessageType.cc)
                             Text("NRPN").tag(CCMessageType.nrpn)
                         }
-                        .frame(width: 70)
+                        .fixedSize()
                     }
 
                     if control.messageType == .cc {

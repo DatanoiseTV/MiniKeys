@@ -67,7 +67,7 @@ struct ContentView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "pianokeys")
                         Text("Devices")
-                            .font(.system(.caption, design: .monospaced))
+                            .font(.system(.caption))
                     }
                 }
                 .help("Browse device MIDI mappings")
@@ -136,7 +136,7 @@ struct ContentView: View {
         }
     }
 
-    private func sendControlValue(control: CCControl, value: UInt8) {
+    @MainActor private func sendControlValue(control: CCControl, value: UInt8) {
         switch control.messageType {
         case .nrpn:
             if control.nrpnMaxValue > 127 {
