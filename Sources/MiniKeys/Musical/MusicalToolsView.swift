@@ -150,7 +150,7 @@ struct MusicalToolsView: View {
                     Text("\(n)/4").tag(n)
                 }
             }
-            .frame(width: 52)
+            .fixedSize()
 
             HStack(spacing: 2) {
                 Text("Vol")
@@ -260,7 +260,7 @@ struct MusicalToolsView: View {
                         Text(d.displayName).tag(d)
                     }
                 }
-                .frame(width: 56)
+                .fixedSize()
 
                 HStack(spacing: 2) {
                     Text("Gate")
