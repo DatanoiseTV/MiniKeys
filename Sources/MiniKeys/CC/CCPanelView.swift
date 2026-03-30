@@ -137,7 +137,7 @@ struct CCPanelView: View {
             .background(Color(nsColor: .windowBackgroundColor))
 
             // Controls — wrapping flow layout
-            ScrollView(.vertical, showsIndicators: true) {
+            ScrollView([.vertical, .horizontal], showsIndicators: true) {
                 FlowLayout(spacing: 12) {
                     // Groups
                     ForEach(layout.groups) { group in
