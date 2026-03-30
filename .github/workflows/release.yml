@@ -63,5 +63,10 @@ jobs:
           body: |
             Automated build from the latest commit on main.
 
-            Download `MiniKeys-macOS-universal.zip`, unzip, and run `MiniKeys.app`.
+            **Download and run:**
+            1. Download `MiniKeys-macOS-universal.zip` below
+            2. Unzip it
+            3. Remove quarantine: `xattr -cr MiniKeys.app`
+            4. Open `MiniKeys.app`
+
             Requires macOS 14 (Sonoma) or later. Universal binary (Apple Silicon + Intel).
