@@ -136,7 +136,7 @@ struct CCPanelView: View {
 
             // Controls — wrapping flow layout
             ScrollView(.vertical, showsIndicators: true) {
-                FlowLayout(spacing: 8 * controlScale) {
+                FlowLayout(spacing: 12) {
                     // Groups
                     ForEach(layout.groups) { group in
                         GroupView(
@@ -171,7 +171,7 @@ struct CCPanelView: View {
                             .padding(.horizontal)
                     }
                 }
-                .padding(4)
+                .padding(12)
             }
             .frame(minHeight: 80)
             .environment(\.controlScale, controlScale)
@@ -310,16 +310,17 @@ struct GroupView: View {
                     .help("Delete group (ungroups controls)")
                 }
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 8)
+            .padding(.top, 4)
 
             if controls.isEmpty {
                 Text("Empty")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .frame(width: 50, height: 40)
-                    .padding(4)
+                    .padding(8)
             } else {
-                FlowLayout(spacing: 6) {
+                FlowLayout(spacing: 10) {
                     ForEach(controls) { control in
                         if let idx = layout.controls.firstIndex(where: { $0.id == control.id }) {
                             CCControlView(
@@ -345,13 +346,18 @@ struct GroupView: View {
                         }
                     }
                 }
-                .padding(4)
+                .padding(.horizontal, 8)
+                .padding(.bottom, 8)
             }
         }
-        .padding(4)
+        .padding(6)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.15))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
         )
         .fixedSize(horizontal: false, vertical: true)
     }

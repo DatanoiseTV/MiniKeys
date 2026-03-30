@@ -33,6 +33,7 @@ struct CCControlView: View {
 
     var body: some View {
         controlContent
+        .padding(8)
         .scaleEffect(scale)
         .frame(
             width: intrinsicWidth * scale,
@@ -40,10 +41,10 @@ struct CCControlView: View {
         )
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.4))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+                        .stroke(isSelected ? Color.accentColor : Color.gray.opacity(0.1), lineWidth: isSelected ? 2 : 1)
                 )
         )
         .overlay {
@@ -63,29 +64,29 @@ struct CCControlView: View {
 
     private var intrinsicWidth: CGFloat {
         switch control.type {
-        case .knob: 72
-        case .slider: 52
-        case .button: 72
-        case .toggle: 72
-        case .select: 82
-        case .adsr: 172
-        case .xyPad: 160
+        case .knob: 88
+        case .slider: 64
+        case .button: 88
+        case .toggle: 88
+        case .select: 96
+        case .adsr: 188
+        case .xyPad: 172
         }
     }
     private var intrinsicHeight: CGFloat {
         switch control.type {
-        case .knob: return 110
-        case .slider: return 140
-        case .button: return 110
-        case .toggle: return 110
+        case .knob: return 124
+        case .slider: return 152
+        case .button: return 124
+        case .toggle: return 124
         case .select:
             if control.options.count <= 5 {
-                return CGFloat(32 + control.options.count * 22)
+                return CGFloat(48 + control.options.count * 22)
             } else {
-                return 80 // compact dropdown
+                return 96
             }
-        case .adsr: return 150
-        case .xyPad: return 180
+        case .adsr: return 168
+        case .xyPad: return 196
         }
     }
 }
