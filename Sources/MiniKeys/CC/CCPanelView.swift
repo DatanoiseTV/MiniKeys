@@ -119,7 +119,7 @@ struct CCPanelView: View {
 
             // Controls — wrapping flow layout
             ScrollView(.vertical, showsIndicators: true) {
-                FlowLayout(spacing: 12) {
+                FlowLayout(spacing: 8) {
                     // Groups
                     ForEach(layout.groups) { group in
                         GroupView(
@@ -154,7 +154,7 @@ struct CCPanelView: View {
                             .padding(.horizontal)
                     }
                 }
-                .padding(12)
+                .padding(8)
             }
             .frame(minHeight: 80)
         }
@@ -302,7 +302,7 @@ struct GroupView: View {
                     .frame(width: 50, height: 40)
                     .padding(8)
             } else {
-                FlowLayout(spacing: 10) {
+                FlowLayout(spacing: 6) {
                     ForEach(controls) { control in
                         if let idx = layout.controls.firstIndex(where: { $0.id == control.id }) {
                             CCControlView(

@@ -59,29 +59,29 @@ struct CCControlView: View {
 
     private var intrinsicWidth: CGFloat {
         switch control.type {
-        case .knob: 88
-        case .slider: 64
-        case .button: 88
-        case .toggle: 88
-        case .select: 96
-        case .adsr: 188
-        case .xyPad: 172
+        case .knob: 76
+        case .slider: 52
+        case .button: 76
+        case .toggle: 76
+        case .select: 84
+        case .adsr: 176
+        case .xyPad: 160
         }
     }
     private var intrinsicHeight: CGFloat {
         switch control.type {
-        case .knob: return 124
-        case .slider: return 152
-        case .button: return 124
-        case .toggle: return 124
+        case .knob: return 112
+        case .slider: return 140
+        case .button: return 112
+        case .toggle: return 112
         case .select:
             if control.options.count <= 5 {
-                return CGFloat(48 + control.options.count * 22)
+                return CGFloat(40 + control.options.count * 20)
             } else {
-                return 96
+                return 84
             }
-        case .adsr: return 168
-        case .xyPad: return 196
+        case .adsr: return 156
+        case .xyPad: return 180
         }
     }
 }
