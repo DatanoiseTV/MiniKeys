@@ -27,8 +27,8 @@ struct CCPanelView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Header
+        VStack(alignment: .leading, spacing: 0) {
+            // Header — pinned outside the scroll
             HStack(spacing: 8) {
                 Text("CC Controls")
                     .font(.system(.caption))
@@ -132,7 +132,9 @@ struct CCPanelView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize()
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(nsColor: .windowBackgroundColor))
 
             // Controls — wrapping flow layout
             ScrollView(.vertical, showsIndicators: true) {
