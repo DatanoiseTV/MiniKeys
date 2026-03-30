@@ -6,7 +6,6 @@ struct CCPanelView: View {
 
     @State private var editMode = false
     @State private var selectedControlIDs: Set<UUID> = []
-    @State private var controlScale: CGFloat = 1.0
 
     // For inline editor: show editor for the last-selected control
     private var primarySelectedID: UUID? {
@@ -113,31 +112,13 @@ struct CCPanelView: View {
                 }
                 .buttonStyle(.plain)
 
-                // Zoom controls
-                HStack(spacing: 4) {
-                    Button(action: { controlScale = max(0.7, controlScale - 0.1) }) {
-                        Image(systemName: "minus.magnifyingglass")
-                    }
-                    .buttonStyle(.plain)
-
-                    Text("\(Int(controlScale * 100))%")
-                        .frame(width: 32)
-
-                    Button(action: { controlScale = min(1.5, controlScale + 0.1) }) {
-                        Image(systemName: "plus.magnifyingglass")
-                    }
-                    .buttonStyle(.plain)
-                }
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-                .fixedSize()
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(Color(nsColor: .windowBackgroundColor))
 
             // Controls — wrapping flow layout
-            ScrollView([.vertical, .horizontal], showsIndicators: true) {
+            ScrollView(.vertical, showsIndicators: true) {
                 FlowLayout(spacing: 12) {
                     // Groups
                     ForEach(layout.groups) { group in
@@ -176,7 +157,6 @@ struct CCPanelView: View {
                 .padding(12)
             }
             .frame(minHeight: 80)
-            .environment(\.controlScale, controlScale)
         }
 
         // Inline editor outside the scroll, pinned at bottom of panel
@@ -632,19 +612,6 @@ struct FlowLayout: Layout {
         }
 
         return (positions, CGSize(width: totalWidth, height: y + rowHeight))
-    }
-}
-
-// MARK: - Environment key for control scale
-
-private struct ControlScaleKey: EnvironmentKey {
-    static let defaultValue: CGFloat = 1.0
-}
-
-extension EnvironmentValues {
-    var controlScale: CGFloat {
-        get { self[ControlScaleKey.self] }
-        set { self[ControlScaleKey.self] = newValue }
     }
 }
 

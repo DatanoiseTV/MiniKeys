@@ -9,7 +9,6 @@ struct CCControlView: View {
     let onValueChange: (CCControl, UInt8) -> Void
     let onSelect: () -> Void
     let onDelete: () -> Void
-    @Environment(\.controlScale) private var scale
 
     @ViewBuilder
     private var controlContent: some View {
@@ -33,10 +32,8 @@ struct CCControlView: View {
 
     var body: some View {
         controlContent
-        .padding(8)
+        .padding(6)
         .frame(width: intrinsicWidth, height: intrinsicHeight)
-        .scaleEffect(scale, anchor: .topLeading)
-        .frame(width: intrinsicWidth * scale, height: intrinsicHeight * scale)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.4))
