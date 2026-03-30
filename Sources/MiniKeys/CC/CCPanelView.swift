@@ -127,6 +127,7 @@ struct CCPanelView: View {
                             group: group,
                             controls: controlsIn(group: group),
                             editMode: editMode,
+                            containerWidth: geo.size.width - 16,
                             selectedControlIDs: $selectedControlIDs,
                             layout: $layout,
                             onValueChange: onValueChange,
@@ -249,6 +250,7 @@ struct GroupView: View {
     let group: CCGroup
     let controls: [CCControl]
     let editMode: Bool
+    var containerWidth: CGFloat? = nil
     @Binding var selectedControlIDs: Set<UUID>
     @Binding var layout: ControlLayout
     let onValueChange: (CCControl, UInt8) -> Void
@@ -304,7 +306,7 @@ struct GroupView: View {
                     .frame(width: 50, height: 40)
                     .padding(8)
             } else {
-                FlowLayout(spacing: 6) {
+                FlowLayout(spacing: 6, containerWidth: containerWidth.map { $0 - 28 }) {
                     ForEach(controls) { control in
                         if let idx = layout.controls.firstIndex(where: { $0.id == control.id }) {
                             CCControlView(
