@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var layout = ControlLayout()
     @State private var presetManager = PresetManager()
     @State private var dbManager = DeviceDBManager()
+    @State private var gamepadManager = GamepadManager()
     @State private var keyboardMonitor: KeyboardMonitor?
     @State private var showDeviceBrowser = false
 
@@ -74,6 +75,13 @@ struct ContentView: View {
 
                 Spacer()
 
+                Button(action: { keyboardState.allNotesOff() }) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(.plain)
+                .help("Panic — all notes off")
+
                 PresetPanelView(presetManager: presetManager, layout: $layout)
             }
             .padding(.horizontal, 12)
@@ -115,7 +123,12 @@ struct ContentView: View {
                 onModeChange: { keyboardState.allNotesOff() }
             )
             .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+            .padding(.bottom, 4)
+
+            // Gamepad
+            GamepadView(gamepadManager: gamepadManager, controls: layout.controls)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
         }
         .frame(minWidth: 700)
         .background(Color(nsColor: .underPageBackgroundColor))
@@ -123,10 +136,19 @@ struct ContentView: View {
             let monitor = KeyboardMonitor(keyboardState: keyboardState)
             monitor.start()
             keyboardMonitor = monitor
+
+            // Wire gamepad axis changes to CC controls
+            gamepadManager.onAxisChange = { [self] controlID, value in
+                if let idx = layout.controls.firstIndex(where: { $0.id == controlID }) {
+                    layout.controls[idx].currentValue = value
+                    sendControlValue(control: layout.controls[idx], value: value)
+                }
+            }
         }
         .onDisappear {
             keyboardMonitor?.stop()
             keyboardMonitor = nil
+            gamepadManager.stopPolling()
         }
         .sheet(isPresented: $showDeviceBrowser) {
             DeviceBrowserView(dbManager: dbManager) { deviceLayout, deviceName in

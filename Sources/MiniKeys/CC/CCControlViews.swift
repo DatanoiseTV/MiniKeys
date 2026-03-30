@@ -335,8 +335,9 @@ struct SelectControlView: View {
     @Binding var control: CCControl
     let onValueChange: (CCControl, UInt8) -> Void
 
-    private var selectedIndex: Int {
-        control.options.firstIndex(where: { $0.id == control.selectedOptionID }) ?? 0
+    private var selectedIndex: Int? {
+        guard !control.options.isEmpty else { return nil }
+        return control.options.firstIndex(where: { $0.id == control.selectedOptionID }) ?? 0
     }
 
     var body: some View {
@@ -352,7 +353,12 @@ struct SelectControlView: View {
                     .foregroundStyle(.tertiary)
             }
 
-            if control.options.count <= 6 {
+            if control.options.isEmpty {
+                Text("No options")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity)
+            } else if control.options.count <= 6 {
                 VStack(spacing: 3) {
                     ForEach(control.options) { option in
                         SelectPill(

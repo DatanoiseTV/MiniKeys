@@ -274,11 +274,12 @@ final class Arpeggiator {
         timer.setEventHandler { [weak self] in
             guard let self else { return }
 
-            guard self.enabled, !seq.isEmpty else { return }
+            guard self.enabled, !seq.isEmpty,
+                  let noteOn, let noteOff else { return }
 
             // Silence previous note (on timer queue, direct MIDI call)
             if let prev = self.currentNote {
-                noteOff?(prev)
+                noteOff(prev)
                 self.currentNote = nil
             }
 
@@ -320,7 +321,7 @@ final class Arpeggiator {
             let actualVel = gateStep == .accent ? UInt8(min(127, Int(vel) + 20)) : vel
 
             self.currentNote = note
-            noteOn?(note, actualVel)
+            noteOn(note, actualVel)
 
             // Schedule gate off on timer queue
             let gateInterval = si * (gate / 100.0)
@@ -328,7 +329,7 @@ final class Arpeggiator {
             gateTimer.schedule(deadline: .now() + gateInterval)
             gateTimer.setEventHandler { [weak self] in
                 if self?.currentNote == note {
-                    noteOff?(note)
+                    noteOff(note)
                     self?.currentNote = nil
                 }
             }
@@ -358,7 +359,9 @@ final class Arpeggiator {
 
     /// First tick when arp starts — plays immediately on main actor
     private func tick() {
-        guard !sequence.isEmpty else { return }
+        guard !sequence.isEmpty,
+              let noteOn = sendNoteOnDirect,
+              let noteOff = sendNoteOffDirect else { return }
 
         silenceCurrent()
 
@@ -372,17 +375,16 @@ final class Arpeggiator {
         }
 
         currentNote = note
-        sendNoteOnDirect?(note, lastVelocity)
+        noteOn(note, lastVelocity)
 
         // Gate off
         let noteToOff = note
-        let noteOff = sendNoteOffDirect
         let gateInterval = stepInterval * (gatePercent / 100.0)
         let gt = DispatchSource.makeTimerSource(queue: timerQueue)
         gt.schedule(deadline: .now() + gateInterval)
         gt.setEventHandler { [weak self] in
             if self?.currentNote == noteToOff {
-                noteOff?(noteToOff)
+                noteOff(noteToOff)
                 self?.currentNote = nil
             }
         }
@@ -391,8 +393,8 @@ final class Arpeggiator {
     }
 
     private func silenceCurrent() {
-        if let note = currentNote {
-            sendNoteOffDirect?(note)
+        if let note = currentNote, let noteOff = sendNoteOffDirect {
+            noteOff(note)
             currentNote = nil
         }
     }

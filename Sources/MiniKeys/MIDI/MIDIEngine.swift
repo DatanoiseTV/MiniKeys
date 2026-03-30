@@ -14,7 +14,6 @@ struct MIDIInput: Identifiable, Hashable {
 }
 
 @Observable
-@MainActor
 final class MIDIEngine {
     @ObservationIgnored private nonisolated(unsafe) var _client: MIDIClientRef = 0
     @ObservationIgnored private nonisolated(unsafe) var _virtualSource: MIDIEndpointRef = 0

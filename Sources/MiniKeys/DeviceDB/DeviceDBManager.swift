@@ -2,7 +2,6 @@ import Foundation
 import Observation
 
 @Observable
-@MainActor
 final class DeviceDBManager {
     var index = DeviceDBIndex()
     var isLoading = false

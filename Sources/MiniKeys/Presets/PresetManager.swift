@@ -3,7 +3,6 @@ import Observation
 import AppKit
 
 @Observable
-@MainActor
 final class PresetManager {
     var presets: [String] = []
     var currentPresetName: String? = nil

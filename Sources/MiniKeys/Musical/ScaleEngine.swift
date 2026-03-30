@@ -107,25 +107,36 @@ enum ScaleForceMode: String, CaseIterable, Codable {
 @Observable
 @MainActor
 final class ScaleEngine {
-    var enabled = false
-    var scale: ScaleType = .major
-    var root: RootNote = .c
+    var enabled = false { didSet { invalidateCache() } }
+    var scale: ScaleType = .major { didSet { invalidateCache() } }
+    var root: RootNote = .c { didSet { invalidateCache() } }
     var forceMode: ScaleForceMode = .snapNearest
+
+    private var _cachedScaleNotes: Set<UInt8>?
 
     /// Returns the set of MIDI note numbers (0-127) that are in the current scale
     var scaleNotes: Set<UInt8> {
-        guard enabled, scale != .chromatic else {
-            return Set(0...127)
-        }
-        var notes = Set<UInt8>()
-        let ints = scale.intervals
-        for midi in 0...127 {
-            let degree = (midi - Int(root.rawValue) + 120) % 12 // +120 to avoid negative mod
-            if ints.contains(degree) {
-                notes.insert(UInt8(midi))
+        if let cached = _cachedScaleNotes { return cached }
+        let result: Set<UInt8>
+        if !enabled || scale == .chromatic {
+            result = Set(0...127)
+        } else {
+            var notes = Set<UInt8>()
+            let ints = scale.intervals
+            for midi in 0...127 {
+                let degree = (midi - Int(root.rawValue) + 120) % 12 // +120 to avoid negative mod
+                if ints.contains(degree) {
+                    notes.insert(UInt8(midi))
+                }
             }
+            result = notes
         }
-        return notes
+        _cachedScaleNotes = result
+        return result
+    }
+
+    private func invalidateCache() {
+        _cachedScaleNotes = nil
     }
 
     /// Process a MIDI note through the scale filter/snap.

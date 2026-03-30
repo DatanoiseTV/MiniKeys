@@ -434,13 +434,13 @@ struct CCInlineEditor: View {
                         TextField("", value: $control.minValue, format: .number)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 44)
-                            .onChange(of: control.minValue) { _, _ in clampCurrent() }
+                            .onChange(of: control.minValue) { _, _ in enforceMinMax(); clampCurrent() }
                     }
                     LabeledField("Max") {
                         TextField("", value: $control.maxValue, format: .number)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 44)
-                            .onChange(of: control.maxValue) { _, _ in clampCurrent() }
+                            .onChange(of: control.maxValue) { _, _ in enforceMinMax(); clampCurrent() }
                     }
                     LabeledField("Step") {
                         TextField("", value: $control.step, format: .number)
@@ -495,6 +495,14 @@ struct CCInlineEditor: View {
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.6))
         )
         .padding(.horizontal, 4)
+    }
+
+    private func enforceMinMax() {
+        if control.minValue > control.maxValue {
+            let oldMin = control.minValue
+            control.minValue = control.maxValue
+            control.maxValue = oldMin
+        }
     }
 
     private func clampCurrent() {
