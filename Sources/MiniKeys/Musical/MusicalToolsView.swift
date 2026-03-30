@@ -281,7 +281,7 @@ struct MusicalToolsView: View {
                     Picker("", selection: $arpeggiator.octaveRange) {
                         ForEach(1...4, id: \.self) { n in Text("\(n)").tag(n) }
                     }
-                    .frame(width: 40)
+                    .fixedSize()
                 }
 
                 HStack(spacing: 4) {
