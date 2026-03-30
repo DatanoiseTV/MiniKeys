@@ -1,276 +1,431 @@
 import SwiftUI
 
+enum MusicalTool: String, CaseIterable {
+    case metronome, quantize, scale, arp, chord, gamepad
+
+    var label: String {
+        switch self {
+        case .metronome: "Metro"
+        case .quantize: "Quantize"
+        case .scale: "Scale"
+        case .arp: "Arp"
+        case .chord: "Chord"
+        case .gamepad: "Gamepad"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .metronome: "metronome"
+        case .quantize: "square.grid.3x3"
+        case .scale: "music.note.list"
+        case .arp: "arrow.up.arrow.down"
+        case .chord: "music.note"
+        case .gamepad: "gamecontroller"
+        }
+    }
+}
+
 struct MusicalToolsView: View {
     @Bindable var arpeggiator: Arpeggiator
     @Bindable var chordEngine: ChordEngine
     @Bindable var metronome: Metronome
     @Bindable var quantizer: LiveQuantizer
     @Bindable var scaleEngine: ScaleEngine
+    @Bindable var gamepadManager: GamepadManager
+    let controls: [CCControl]
     var onModeChange: () -> Void = {}
 
+    @State private var expandedTool: MusicalTool? = nil
+
     var body: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 12) {
-                // Metronome
-                GroupBox {
-                    HStack(spacing: 8) {
-                        Toggle("Metro", isOn: $metronome.enabled)
-                            .toggleStyle(.switch)
-                            .controlSize(.mini)
-                            .font(.system(.caption).bold())
-
-                        if metronome.enabled {
-                            HStack(spacing: 2) {
-                                Text("BPM")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                                TextField("", value: $metronome.bpm, format: .number)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 42)
-                                    .onChange(of: metronome.bpm) { _, newBPM in
-                                        arpeggiator.bpm = newBPM
-                                        quantizer.bpm = newBPM
-                                    }
-                                TapTempoButton { newBPM in
-                                    metronome.bpm = newBPM
-                                    arpeggiator.bpm = newBPM
-                                    quantizer.bpm = newBPM
-                                }
-                            }
-
-                            Picker("", selection: $metronome.beatsPerBar) {
-                                ForEach([2, 3, 4, 5, 6, 7], id: \.self) { n in
-                                    Text("\(n)/4").tag(n)
-                                }
-                            }
-                            .frame(width: 52)
-
-                            HStack(spacing: 2) {
-                                Text("Vol")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                                Slider(value: $metronome.volume, in: 0...1)
-                                    .frame(width: 40)
-                            }
-
-                            // Beat indicator
-                            HStack(spacing: 3) {
-                                ForEach(0..<metronome.beatsPerBar, id: \.self) { beat in
-                                    Circle()
-                                        .fill(beat == metronome.currentBeat ? (beat == 0 ? Color.orange : Color.accentColor) : Color.gray.opacity(0.25))
-                                        .frame(width: 8, height: 8)
-                                }
+        VStack(spacing: 0) {
+            // Toggle pills row
+            HStack(spacing: 4) {
+                ForEach(MusicalTool.allCases, id: \.self) { tool in
+                    ToolPill(
+                        tool: tool,
+                        isActive: isToolActive(tool),
+                        isExpanded: expandedTool == tool,
+                        onToggleActive: { toggleActive(tool) },
+                        onToggleExpand: {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                expandedTool = expandedTool == tool ? nil : tool
                             }
                         }
-                    }
+                    )
                 }
-
-                // Quantizer
-                GroupBox {
-                    HStack(spacing: 8) {
-                        Toggle("Quantize", isOn: $quantizer.enabled)
-                            .toggleStyle(.switch)
-                            .controlSize(.mini)
-                            .font(.system(.caption).bold())
-
-                        if quantizer.enabled {
-                            Picker("", selection: $quantizer.division) {
-                                ForEach(QuantizeDivision.allCases, id: \.self) { d in
-                                    Text(d.displayName).tag(d)
-                                }
-                            }
-                            .fixedSize()
-
-                            HStack(spacing: 4) {
-                                Text("Strength")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                                Slider(value: $quantizer.strength, in: 0...100, step: 10)
-                                    .frame(width: 80)
-                                Text("\(Int(quantizer.strength))%")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 30, alignment: .trailing)
-                            }
-
-                            Toggle("Note-off", isOn: $quantizer.quantizeNoteOff)
-                                .toggleStyle(.checkbox)
-                                .font(.system(size: 10))
-                                .help("Also quantize note-off events")
-                        }
-                    }
-                }
-
-                // Scale
-                GroupBox {
-                    HStack(spacing: 8) {
-                        Toggle("Scale", isOn: $scaleEngine.enabled)
-                            .toggleStyle(.switch)
-                            .controlSize(.mini)
-                            .font(.system(.caption).bold())
-                            .onChange(of: scaleEngine.enabled) { _, _ in onModeChange() }
-
-                        if scaleEngine.enabled {
-                            Picker("", selection: $scaleEngine.root) {
-                                ForEach(RootNote.allCases, id: \.self) { r in
-                                    Text(r.displayName).tag(r)
-                                }
-                            }
-                            .fixedSize()
-
-                            Picker("", selection: $scaleEngine.scale) {
-                                ForEach(ScaleType.allCases, id: \.self) { s in
-                                    Text(s.displayName).tag(s)
-                                }
-                            }
-                            .fixedSize()
-
-                            Picker("", selection: $scaleEngine.forceMode) {
-                                ForEach(ScaleForceMode.allCases, id: \.self) { m in
-                                    Text(m.displayName).tag(m)
-                                }
-                            }
-                            .fixedSize()
-                        }
-                    }
-                }
+                Spacer()
             }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 4)
 
-            HStack(spacing: 12) {
-                // Arpeggiator
-                GroupBox {
-                    HStack(spacing: 10) {
-                        Toggle("Arp", isOn: $arpeggiator.enabled)
-                            .toggleStyle(.switch)
-                            .controlSize(.mini)
-                            .font(.system(.caption).bold())
-                            .onChange(of: arpeggiator.enabled) { _, on in
-                                if on { chordEngine.enabled = false }
-                                onModeChange()
-                            }
-
-                        if arpeggiator.enabled {
-                            Picker("", selection: $arpeggiator.mode) {
-                                ForEach(ArpMode.allCases, id: \.self) { m in
-                                    Text(m.displayName).tag(m)
-                                }
-                            }
-                            .frame(width: 80)
-
-                            Picker("", selection: $arpeggiator.stackMode) {
-                                ForEach(ArpStackMode.allCases, id: \.self) { s in
-                                    Text(s.displayName).tag(s)
-                                }
-                            }
-                            .frame(width: 72)
-                            .help("Note priority / sorting")
-
-                            HStack(spacing: 2) {
-                                Text("BPM")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                                TextField("", value: $arpeggiator.bpm, format: .number)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 42)
-                                    .onChange(of: arpeggiator.bpm) { _, newBPM in
-                                        metronome.bpm = newBPM
-                                        quantizer.bpm = newBPM
-                                    }
-                            }
-
-                            Picker("", selection: $arpeggiator.division) {
-                                ForEach(ArpDivision.allCases, id: \.self) { d in
-                                    Text(d.displayName).tag(d)
-                                }
-                            }
-                            .frame(width: 56)
-
-                            HStack(spacing: 2) {
-                                Text("Gate")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                                Slider(value: $arpeggiator.gatePercent, in: 5...100, step: 5)
-                                    .frame(width: 50)
-                                Text("\(Int(arpeggiator.gatePercent))%")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 26, alignment: .trailing)
-                            }
-
-                            HStack(spacing: 2) {
-                                Text("Oct")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                                Picker("", selection: $arpeggiator.octaveRange) {
-                                    ForEach(1...4, id: \.self) { n in Text("\(n)").tag(n) }
-                                }
-                                .frame(width: 40)
-                            }
-
-                            HStack(spacing: 4) {
-                                Text("Swing")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                                Slider(value: $arpeggiator.swing, in: 0...100)
-                                    .frame(width: 60)
-                                Text("\(Int(arpeggiator.swing))%")
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 30, alignment: .trailing)
-                            }
-
-                            Toggle("Hold", isOn: $arpeggiator.hold)
-                                .toggleStyle(.checkbox)
-                                .font(.system(size: 10))
-                        }
-                    }
-                }
-
-                // Chord Mode
-                GroupBox {
-                    HStack(spacing: 10) {
-                        Toggle("Chord", isOn: $chordEngine.enabled)
-                            .toggleStyle(.switch)
-                            .controlSize(.mini)
-                            .font(.system(.caption).bold())
-                            .onChange(of: chordEngine.enabled) { _, on in
-                                if on { arpeggiator.enabled = false }
-                                onModeChange()
-                            }
-
-                        if chordEngine.enabled {
-                            Picker("", selection: $chordEngine.chordType) {
-                                ForEach(ChordType.allCases, id: \.self) { t in
-                                    Text(t.displayName).tag(t)
-                                }
-                            }
-                            .fixedSize()
-
-                            Picker("Inversion", selection: $chordEngine.inversion) {
-                                ForEach(0...3, id: \.self) { n in
-                                    Text("Inv \(n)").tag(n)
-                                }
-                            }
-                            .fixedSize()
-                        }
-                    }
-                }
-            }
-            .font(.system(.caption))
-
-            // Gate pattern
-            if arpeggiator.enabled {
-                GatePatternView(
-                    pattern: $arpeggiator.gatePattern,
-                    length: $arpeggiator.patternLength,
-                    usePattern: $arpeggiator.useGatePattern
-                )
+            // Expanded settings for the selected tool
+            if let tool = expandedTool {
+                toolSettings(for: tool)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+                    )
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 4)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
+
+    // MARK: - Active state
+
+    private func isToolActive(_ tool: MusicalTool) -> Bool {
+        switch tool {
+        case .metronome: metronome.enabled
+        case .quantize: quantizer.enabled
+        case .scale: scaleEngine.enabled
+        case .arp: arpeggiator.enabled
+        case .chord: chordEngine.enabled
+        case .gamepad: gamepadManager.isActive
+        }
+    }
+
+    private func toggleActive(_ tool: MusicalTool) {
+        switch tool {
+        case .metronome: metronome.enabled.toggle()
+        case .quantize: quantizer.enabled.toggle()
+        case .scale:
+            scaleEngine.enabled.toggle()
+            onModeChange()
+        case .arp:
+            arpeggiator.enabled.toggle()
+            if arpeggiator.enabled { chordEngine.enabled = false }
+            onModeChange()
+        case .chord:
+            chordEngine.enabled.toggle()
+            if chordEngine.enabled { arpeggiator.enabled = false }
+            onModeChange()
+        case .gamepad:
+            gamepadManager.isActive.toggle()
+            if gamepadManager.isActive { gamepadManager.startPolling() }
+            else { gamepadManager.stopPolling() }
+        }
+    }
+
+    // MARK: - Settings panels
+
+    @ViewBuilder
+    private func toolSettings(for tool: MusicalTool) -> some View {
+        switch tool {
+        case .metronome: metronomeSettings
+        case .quantize: quantizeSettings
+        case .scale: scaleSettings
+        case .arp: arpSettings
+        case .chord: chordSettings
+        case .gamepad: gamepadSettings
+        }
+    }
+
+    private var metronomeSettings: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 2) {
+                Text("BPM")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                TextField("", value: $metronome.bpm, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 42)
+                    .onChange(of: metronome.bpm) { _, newBPM in
+                        arpeggiator.bpm = newBPM
+                        quantizer.bpm = newBPM
+                    }
+                TapTempoButton { newBPM in
+                    metronome.bpm = newBPM
+                    arpeggiator.bpm = newBPM
+                    quantizer.bpm = newBPM
+                }
+            }
+
+            Picker("", selection: $metronome.beatsPerBar) {
+                ForEach([2, 3, 4, 5, 6, 7], id: \.self) { n in
+                    Text("\(n)/4").tag(n)
+                }
+            }
+            .frame(width: 52)
+
+            HStack(spacing: 2) {
+                Text("Vol")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                Slider(value: $metronome.volume, in: 0...1)
+                    .frame(width: 50)
+            }
+
+            HStack(spacing: 3) {
+                ForEach(0..<metronome.beatsPerBar, id: \.self) { beat in
+                    Circle()
+                        .fill(beat == metronome.currentBeat ? (beat == 0 ? Color.orange : Color.accentColor) : Color.gray.opacity(0.25))
+                        .frame(width: 8, height: 8)
+                }
+            }
+        }
+        .font(.system(.caption))
+    }
+
+    private var quantizeSettings: some View {
+        HStack(spacing: 10) {
+            Picker("", selection: $quantizer.division) {
+                ForEach(QuantizeDivision.allCases, id: \.self) { d in
+                    Text(d.displayName).tag(d)
+                }
+            }
+            .fixedSize()
+
+            HStack(spacing: 4) {
+                Text("Strength")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                Slider(value: $quantizer.strength, in: 0...100, step: 10)
+                    .frame(width: 80)
+                Text("\(Int(quantizer.strength))%")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 30, alignment: .trailing)
+            }
+
+            Toggle("Note-off", isOn: $quantizer.quantizeNoteOff)
+                .toggleStyle(.checkbox)
+                .font(.system(size: 10))
+        }
+        .font(.system(.caption))
+    }
+
+    private var scaleSettings: some View {
+        HStack(spacing: 10) {
+            Picker("", selection: $scaleEngine.root) {
+                ForEach(RootNote.allCases, id: \.self) { r in
+                    Text(r.displayName).tag(r)
+                }
+            }
+            .fixedSize()
+
+            Picker("", selection: $scaleEngine.scale) {
+                ForEach(ScaleType.allCases, id: \.self) { s in
+                    Text(s.displayName).tag(s)
+                }
+            }
+            .fixedSize()
+
+            Picker("", selection: $scaleEngine.forceMode) {
+                ForEach(ScaleForceMode.allCases, id: \.self) { m in
+                    Text(m.displayName).tag(m)
+                }
+            }
+            .fixedSize()
+        }
+        .font(.system(.caption))
+    }
+
+    private var arpSettings: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 10) {
+                Picker("", selection: $arpeggiator.mode) {
+                    ForEach(ArpMode.allCases, id: \.self) { m in
+                        Text(m.displayName).tag(m)
+                    }
+                }
+                .fixedSize()
+
+                Picker("", selection: $arpeggiator.stackMode) {
+                    ForEach(ArpStackMode.allCases, id: \.self) { s in
+                        Text(s.displayName).tag(s)
+                    }
+                }
+                .fixedSize()
+
+                HStack(spacing: 2) {
+                    Text("BPM")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                    TextField("", value: $arpeggiator.bpm, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 42)
+                        .onChange(of: arpeggiator.bpm) { _, newBPM in
+                            metronome.bpm = newBPM
+                            quantizer.bpm = newBPM
+                        }
+                }
+
+                Picker("", selection: $arpeggiator.division) {
+                    ForEach(ArpDivision.allCases, id: \.self) { d in
+                        Text(d.displayName).tag(d)
+                    }
+                }
+                .frame(width: 56)
+
+                HStack(spacing: 2) {
+                    Text("Gate")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                    Slider(value: $arpeggiator.gatePercent, in: 5...100, step: 5)
+                        .frame(width: 50)
+                    Text("\(Int(arpeggiator.gatePercent))%")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 26, alignment: .trailing)
+                }
+
+                HStack(spacing: 2) {
+                    Text("Oct")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                    Picker("", selection: $arpeggiator.octaveRange) {
+                        ForEach(1...4, id: \.self) { n in Text("\(n)").tag(n) }
+                    }
+                    .frame(width: 40)
+                }
+
+                HStack(spacing: 4) {
+                    Text("Swing")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                    Slider(value: $arpeggiator.swing, in: 0...100)
+                        .frame(width: 60)
+                    Text("\(Int(arpeggiator.swing))%")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 30, alignment: .trailing)
+                }
+
+                Toggle("Hold", isOn: $arpeggiator.hold)
+                    .toggleStyle(.checkbox)
+                    .font(.system(size: 10))
+            }
+
+            // Gate pattern
+            GatePatternView(
+                pattern: $arpeggiator.gatePattern,
+                length: $arpeggiator.patternLength,
+                usePattern: $arpeggiator.useGatePattern
+            )
+        }
+        .font(.system(.caption))
+    }
+
+    private var chordSettings: some View {
+        HStack(spacing: 10) {
+            Picker("", selection: $chordEngine.chordType) {
+                ForEach(ChordType.allCases, id: \.self) { t in
+                    Text(t.displayName).tag(t)
+                }
+            }
+            .fixedSize()
+
+            Picker("Inversion", selection: $chordEngine.inversion) {
+                ForEach(0...3, id: \.self) { n in
+                    Text("Inv \(n)").tag(n)
+                }
+            }
+            .fixedSize()
+        }
+        .font(.system(.caption))
+    }
+
+    private var gamepadSettings: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                if gamepadManager.connectedGamepads.isEmpty {
+                    Text("No gamepad connected")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                } else {
+                    Picker("", selection: $gamepadManager.selectedGamepadIndex) {
+                        ForEach(0..<gamepadManager.connectedGamepads.count, id: \.self) { i in
+                            Text(gamepadManager.connectedGamepads[i].vendorName ?? "Gamepad \(i + 1)")
+                                .tag(i as Int?)
+                        }
+                    }
+                    .fixedSize()
+
+                    Button(action: { gamepadManager.refreshGamepads() }) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if !gamepadManager.connectedGamepads.isEmpty {
+                ForEach($gamepadManager.bindings) { $binding in
+                    GamepadBindingRow(
+                        binding: $binding,
+                        availableAxes: gamepadManager.availableAxes,
+                        controls: controls,
+                        onDelete: { gamepadManager.removeBinding(binding.id) }
+                    )
+                }
+
+                Menu {
+                    ForEach(gamepadManager.availableAxes, id: \.self) { axis in
+                        Button(axis) { gamepadManager.addBinding(axis: axis) }
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 9, weight: .bold))
+                        Text("Add Axis")
+                            .font(.system(size: 10))
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(Color.accentColor.opacity(0.15)))
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
+        }
+        .font(.system(.caption))
+    }
 }
 
-// MARK: - Gate Pattern Editor
+// MARK: - Tool Pill
+
+struct ToolPill: View {
+    let tool: MusicalTool
+    let isActive: Bool
+    let isExpanded: Bool
+    let onToggleActive: () -> Void
+    let onToggleExpand: () -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: tool.icon)
+                .font(.system(size: 9))
+
+            Text(tool.label)
+                .font(.system(size: 10, weight: isActive ? .semibold : .regular))
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 5)
+                .fill(isActive ? Color.accentColor.opacity(0.25) : Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(isExpanded ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1)
+                )
+        )
+        .foregroundStyle(isActive ? Color.accentColor : .secondary)
+        .onTapGesture { onToggleExpand() }
+        .contextMenu {
+            Button(isActive ? "Disable" : "Enable") { onToggleActive() }
+        }
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded { onToggleActive() }
+        )
+    }
+}
+
+// MARK: - Gate Pattern
 
 struct GatePatternView: View {
     @Binding var pattern: [GateStep]
@@ -297,7 +452,6 @@ struct GatePatternView: View {
                 }
                 .frame(width: 80)
 
-                // Legend
                 HStack(spacing: 6) {
                     LegendDot(color: .accentColor, label: "On")
                     LegendDot(color: .orange, label: "Accent")
@@ -331,13 +485,9 @@ struct GateStepCell: View {
             .overlay(
                 Group {
                     if step == .accent {
-                        Text("!")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
+                        Text("!").font(.system(size: 8, weight: .black)).foregroundStyle(.white)
                     } else if step == .tie {
-                        Text("~")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
+                        Text("~").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
                     }
                 }
             )
@@ -346,7 +496,6 @@ struct GateStepCell: View {
                     .stroke(index % 4 == 0 ? Color.primary.opacity(0.2) : Color.clear, lineWidth: 1)
             )
             .onTapGesture {
-                // Cycle: on -> accent -> tie -> off -> on
                 switch step {
                 case .on: step = .accent
                 case .accent: step = .tie
@@ -385,7 +534,7 @@ struct TapTempoButton: View {
     @State private var isFlashing = false
 
     private let maxTaps = 8
-    private let resetTimeout: TimeInterval = 2.0 // reset if no tap for 2s
+    private let resetTimeout: TimeInterval = 2.0
 
     var body: some View {
         Button(action: tap) {
@@ -404,34 +553,77 @@ struct TapTempoButton: View {
 
     private func tap() {
         let now = ProcessInfo.processInfo.systemUptime
-
-        // Reset if too long since last tap
-        if now - lastTapTime > resetTimeout {
-            taps.removeAll()
-        }
-
+        if now - lastTapTime > resetTimeout { taps.removeAll() }
         taps.append(now)
         lastTapTime = now
+        if taps.count > maxTaps { taps.removeFirst() }
 
-        // Keep only the last N taps
-        if taps.count > maxTaps {
-            taps.removeFirst()
-        }
-
-        // Need at least 2 taps to compute BPM
         if taps.count >= 2 {
             let totalInterval = taps.last! - taps.first!
             let avgInterval = totalInterval / Double(taps.count - 1)
-            let bpm = 60.0 / avgInterval
-            // Clamp to reasonable range
-            let clamped = min(300, max(20, bpm))
-            onBPM(Double(Int(clamped * 10)) / 10.0) // round to 1 decimal
+            let bpm = min(300, max(20, 60.0 / avgInterval))
+            onBPM(Double(Int(bpm * 10)) / 10.0)
         }
 
-        // Visual flash
         isFlashing = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            isFlashing = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { isFlashing = false }
+    }
+}
+
+// MARK: - Gamepad Binding Row
+
+struct GamepadBindingRow: View {
+    @Binding var binding: GamepadBinding
+    let availableAxes: [String]
+    let controls: [CCControl]
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Picker("", selection: $binding.axisName) {
+                ForEach(availableAxes, id: \.self) { axis in
+                    Text(axis).tag(axis)
+                }
+            }
+            .frame(width: 130)
+
+            Image(systemName: "arrow.right")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+
+            Picker("", selection: $binding.controlID) {
+                Text("None").tag(nil as UUID?)
+                ForEach(controls) { control in
+                    Text("\(control.label) (CC \(control.ccNumber))")
+                        .tag(control.id as UUID?)
+                }
+            }
+            .fixedSize()
+            .onChange(of: binding.controlID) { _, newID in
+                if let id = newID, let ctrl = controls.first(where: { $0.id == id }) {
+                    binding.controlLabel = ctrl.label
+                }
+            }
+
+            Toggle("Inv", isOn: $binding.inverted)
+                .toggleStyle(.checkbox)
+                .font(.system(size: 9))
+
+            HStack(spacing: 2) {
+                Text("DZ")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                Slider(value: $binding.deadzone, in: 0...0.5, step: 0.05)
+                    .frame(width: 40)
+            }
+
+            Button(action: onDelete) {
+                Image(systemName: "minus.circle")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.red.opacity(0.6))
+            }
+            .buttonStyle(.plain)
         }
+        .font(.system(.caption))
     }
 }

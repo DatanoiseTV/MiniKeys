@@ -120,15 +120,12 @@ struct ContentView: View {
                 metronome: keyboardState.metronome,
                 quantizer: keyboardState.quantizer,
                 scaleEngine: keyboardState.scaleEngine,
+                gamepadManager: gamepadManager,
+                controls: layout.controls,
                 onModeChange: { keyboardState.allNotesOff() }
             )
             .padding(.horizontal, 12)
-            .padding(.bottom, 4)
-
-            // Gamepad
-            GamepadView(gamepadManager: gamepadManager, controls: layout.controls)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+            .padding(.bottom, 6)
         }
         .frame(minWidth: 700)
         .background(Color(nsColor: .underPageBackgroundColor))
