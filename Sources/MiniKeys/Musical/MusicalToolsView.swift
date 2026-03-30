@@ -45,9 +45,8 @@ struct MusicalToolsView: View {
                 ForEach(MusicalTool.allCases, id: \.self) { tool in
                     ToolPill(
                         tool: tool,
-                        isActive: isToolActive(tool),
+                        isActive: bindingForTool(tool),
                         isExpanded: expandedTool == tool,
-                        onToggleActive: { toggleActive(tool) },
                         onToggleExpand: {
                             withAnimation(.easeInOut(duration: 0.15)) {
                                 expandedTool = expandedTool == tool ? nil : tool
@@ -78,37 +77,40 @@ struct MusicalToolsView: View {
 
     // MARK: - Active state
 
-    private func isToolActive(_ tool: MusicalTool) -> Bool {
-        switch tool {
-        case .metronome: metronome.enabled
-        case .quantize: quantizer.enabled
-        case .scale: scaleEngine.enabled
-        case .arp: arpeggiator.enabled
-        case .chord: chordEngine.enabled
-        case .gamepad: gamepadManager.isActive
-        }
-    }
-
-    private func toggleActive(_ tool: MusicalTool) {
-        switch tool {
-        case .metronome: metronome.enabled.toggle()
-        case .quantize: quantizer.enabled.toggle()
-        case .scale:
-            scaleEngine.enabled.toggle()
-            onModeChange()
-        case .arp:
-            arpeggiator.enabled.toggle()
-            if arpeggiator.enabled { chordEngine.enabled = false }
-            onModeChange()
-        case .chord:
-            chordEngine.enabled.toggle()
-            if chordEngine.enabled { arpeggiator.enabled = false }
-            onModeChange()
-        case .gamepad:
-            gamepadManager.isActive.toggle()
-            if gamepadManager.isActive { gamepadManager.startPolling() }
-            else { gamepadManager.stopPolling() }
-        }
+    private func bindingForTool(_ tool: MusicalTool) -> Binding<Bool> {
+        Binding(
+            get: {
+                switch tool {
+                case .metronome: metronome.enabled
+                case .quantize: quantizer.enabled
+                case .scale: scaleEngine.enabled
+                case .arp: arpeggiator.enabled
+                case .chord: chordEngine.enabled
+                case .gamepad: gamepadManager.isActive
+                }
+            },
+            set: { newValue in
+                switch tool {
+                case .metronome: metronome.enabled = newValue
+                case .quantize: quantizer.enabled = newValue
+                case .scale:
+                    scaleEngine.enabled = newValue
+                    onModeChange()
+                case .arp:
+                    arpeggiator.enabled = newValue
+                    if newValue { chordEngine.enabled = false }
+                    onModeChange()
+                case .chord:
+                    chordEngine.enabled = newValue
+                    if newValue { arpeggiator.enabled = false }
+                    onModeChange()
+                case .gamepad:
+                    gamepadManager.isActive = newValue
+                    if newValue { gamepadManager.startPolling() }
+                    else { gamepadManager.stopPolling() }
+                }
+            }
+        )
     }
 
     // MARK: - Settings panels
@@ -391,24 +393,27 @@ struct MusicalToolsView: View {
 
 struct ToolPill: View {
     let tool: MusicalTool
-    let isActive: Bool
+    @Binding var isActive: Bool
     let isExpanded: Bool
-    let onToggleActive: () -> Void
     let onToggleExpand: () -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
-            // On/off indicator — click to toggle
-            Circle()
-                .fill(isActive ? Color.accentColor : Color.gray.opacity(0.3))
-                .frame(width: 7, height: 7)
-                .onTapGesture { onToggleActive() }
+        HStack(spacing: 5) {
+            Toggle("", isOn: $isActive)
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .labelsHidden()
 
             Image(systemName: tool.icon)
                 .font(.system(size: 9))
 
             Text(tool.label)
                 .font(.system(size: 10, weight: isActive ? .semibold : .regular))
+
+            if isExpanded {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 7))
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -421,6 +426,7 @@ struct ToolPill: View {
                 )
         )
         .foregroundStyle(isActive ? Color.accentColor : .secondary)
+        .contentShape(Rectangle())
         .onTapGesture { onToggleExpand() }
     }
 }
@@ -532,37 +538,63 @@ struct TapTempoButton: View {
     @State private var taps: [TimeInterval] = []
     @State private var lastTapTime: TimeInterval = 0
     @State private var isFlashing = false
+    @State private var displayBPM: Double? = nil
 
-    private let maxTaps = 8
-    private let resetTimeout: TimeInterval = 2.0
+    private let maxTaps = 12
+    private let resetTimeout: TimeInterval = 2.5
 
     var body: some View {
         Button(action: tap) {
-            Text("Tap")
-                .font(.system(size: 9, weight: .medium))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(isFlashing ? Color.accentColor.opacity(0.4) : Color(nsColor: .controlBackgroundColor))
-                )
+            HStack(spacing: 3) {
+                Text("Tap")
+                    .font(.system(size: 9, weight: .medium))
+                if let bpm = displayBPM, taps.count >= 2 {
+                    Text("(\(Int(bpm)))")
+                        .font(.system(size: 8))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isFlashing ? Color.accentColor.opacity(0.4) : Color(nsColor: .controlBackgroundColor))
+            )
         }
         .buttonStyle(.plain)
-        .help("Tap repeatedly to set BPM")
+        .help("Tap repeatedly to set BPM. Averages last \(maxTaps) taps, weights recent taps more.")
     }
 
     private func tap() {
         let now = ProcessInfo.processInfo.systemUptime
-        if now - lastTapTime > resetTimeout { taps.removeAll() }
+        if now - lastTapTime > resetTimeout {
+            taps.removeAll()
+            displayBPM = nil
+        }
         taps.append(now)
         lastTapTime = now
         if taps.count > maxTaps { taps.removeFirst() }
 
-        if taps.count >= 2 {
-            let totalInterval = taps.last! - taps.first!
-            let avgInterval = totalInterval / Double(taps.count - 1)
-            let bpm = min(300, max(20, 60.0 / avgInterval))
-            onBPM(Double(Int(bpm * 10)) / 10.0)
+        guard taps.count >= 2 else { return }
+
+        // Weighted average: recent intervals count more
+        var weightedSum: Double = 0
+        var weightTotal: Double = 0
+        for i in 1..<taps.count {
+            let interval = taps[i] - taps[i - 1]
+            let weight = Double(i) // later taps get higher weight
+            weightedSum += interval * weight
+            weightTotal += weight
+        }
+        let avgInterval = weightedSum / weightTotal
+        let bpm = min(300, max(20, 60.0 / avgInterval))
+        let rounded = Double(Int(bpm * 10)) / 10.0
+
+        displayBPM = rounded
+
+        // Only commit to BPM after 3+ taps for stability
+        if taps.count >= 3 {
+            onBPM(rounded)
         }
 
         isFlashing = true
