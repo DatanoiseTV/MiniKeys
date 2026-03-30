@@ -1,0 +1,152 @@
+import CoreMIDI
+import SwiftUI
+
+struct ContentView: View {
+    @Environment(MIDIEngine.self) private var midiEngine
+    @Environment(KeyboardState.self) private var keyboardState
+
+    @State private var layout = ControlLayout()
+    @State private var presetManager = PresetManager()
+    @State private var dbManager = DeviceDBManager()
+    @State private var keyboardMonitor: KeyboardMonitor?
+    @State private var showDeviceBrowser = false
+
+    var body: some View {
+        @Bindable var engine = midiEngine
+
+        VStack(spacing: 0) {
+            // Toolbar
+            HStack(spacing: 12) {
+                HStack(spacing: 4) {
+                    Image(systemName: "cable.connector")
+                        .foregroundStyle(.secondary)
+                    Picker("", selection: $engine.selectedDestinationID) {
+                        Text("Virtual Output Only")
+                            .tag(nil as MIDIEndpointRef?)
+                        if !midiEngine.destinations.isEmpty {
+                            Divider()
+                            ForEach(midiEngine.destinations) { dest in
+                                Text(dest.name).tag(dest.id as MIDIEndpointRef?)
+                            }
+                        }
+                    }
+                    .frame(minWidth: 180)
+                }
+
+                HStack(spacing: 4) {
+                    Text("Ch")
+                        .font(.system(.caption))
+                        .foregroundStyle(.secondary)
+                    Picker("", selection: $engine.channel) {
+                        ForEach(0..<16, id: \.self) { ch in
+                            Text("\(ch + 1)").tag(UInt8(ch))
+                        }
+                    }
+                    .frame(width: 60)
+                }
+
+                // MIDI Input
+                HStack(spacing: 4) {
+                    Image(systemName: "pianokeys.inverse")
+                        .foregroundStyle(.secondary)
+                        .font(.system(size: 10))
+                    Picker("", selection: $engine.selectedSourceID) {
+                        Text("No Input")
+                            .tag(nil as MIDIEndpointRef?)
+                        if !midiEngine.sources.isEmpty {
+                            Divider()
+                            ForEach(midiEngine.sources) { src in
+                                Text(src.name).tag(src.id as MIDIEndpointRef?)
+                            }
+                        }
+                    }
+                    .frame(minWidth: 100)
+                }
+
+                Button(action: { showDeviceBrowser = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "pianokeys")
+                        Text("Devices")
+                            .font(.system(.caption, design: .monospaced))
+                    }
+                }
+                .help("Browse device MIDI mappings")
+
+                Spacer()
+
+                PresetPanelView(presetManager: presetManager, layout: $layout)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(nsColor: .windowBackgroundColor))
+
+            Divider()
+
+            // CC Panel
+            CCPanelView(layout: $layout) { control, value in
+                sendControlValue(control: control, value: value)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+
+            Divider()
+
+            // Keyboard
+            KeyboardView(
+                pressedKeys: keyboardState.pressedKeys,
+                mouseNote: keyboardState.mouseNote,
+                chordNotes: keyboardState.chordEngine.allSoundingNotes,
+                scaleNotes: keyboardState.scaleEngine.scaleNotes,
+                octave: keyboardState.octave,
+                velocity: keyboardState.velocity,
+                sustainActive: keyboardState.sustainActive,
+                onMouseNote: { offset in keyboardState.mouseNoteOn(semitoneOffset: offset) },
+                onMouseNoteOff: { keyboardState.mouseNoteOff() }
+            )
+            .padding(12)
+
+            // Musical tools below keyboard
+            MusicalToolsView(
+                arpeggiator: keyboardState.arpeggiator,
+                chordEngine: keyboardState.chordEngine,
+                metronome: keyboardState.metronome,
+                quantizer: keyboardState.quantizer,
+                scaleEngine: keyboardState.scaleEngine,
+                onModeChange: { keyboardState.allNotesOff() }
+            )
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+        }
+        .frame(minWidth: 700)
+        .background(Color(nsColor: .underPageBackgroundColor))
+        .onAppear {
+            let monitor = KeyboardMonitor(keyboardState: keyboardState)
+            monitor.start()
+            keyboardMonitor = monitor
+        }
+        .onDisappear {
+            keyboardMonitor?.stop()
+            keyboardMonitor = nil
+        }
+        .sheet(isPresented: $showDeviceBrowser) {
+            DeviceBrowserView(dbManager: dbManager) { deviceLayout, deviceName in
+                layout = deviceLayout
+                presetManager.save(name: deviceName, layout: deviceLayout)
+            }
+        }
+    }
+
+    private func sendControlValue(control: CCControl, value: UInt8) {
+        switch control.messageType {
+        case .nrpn:
+            if control.nrpnMaxValue > 127 {
+                let scaled = UInt16(Double(value) / 127.0 * Double(control.nrpnMaxValue))
+                midiEngine.sendNRPN(msb: control.nrpnMSB, lsb: control.nrpnLSB, value: scaled, channel: midiEngine.channel)
+            } else {
+                midiEngine.sendNRPN7(msb: control.nrpnMSB, lsb: control.nrpnLSB, value: value, channel: midiEngine.channel)
+            }
+        case .cc:
+            midiEngine.sendCC(controller: control.ccNumber, value: value, channel: midiEngine.channel)
+        }
+    }
+}
