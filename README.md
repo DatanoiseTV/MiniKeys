@@ -47,6 +47,8 @@ You can also click and drag across the on-screen piano with your mouse or trackp
 
 Build custom MIDI controller layouts with drag-and-drop widgets:
 
+<img width="168" height="269" alt="Screenshot 2026-03-31 at 01 49 31" src="https://github.com/user-attachments/assets/b444595c-e89c-4ef9-bc07-08bd0584ad5a" />
+
 - **Knobs** -- rotary controls, drag vertically to change
 - **Sliders** -- vertical faders
 - **Buttons** -- momentary, sends a value on press and another on release
