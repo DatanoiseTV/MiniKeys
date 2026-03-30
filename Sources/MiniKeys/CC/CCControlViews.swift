@@ -34,11 +34,9 @@ struct CCControlView: View {
     var body: some View {
         controlContent
         .padding(8)
-        .scaleEffect(scale)
-        .frame(
-            width: intrinsicWidth * scale,
-            height: intrinsicHeight * scale
-        )
+        .frame(width: intrinsicWidth, height: intrinsicHeight)
+        .scaleEffect(scale, anchor: .topLeading)
+        .frame(width: intrinsicWidth * scale, height: intrinsicHeight * scale)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.4))
