@@ -31,6 +31,11 @@ struct MusicalToolsView: View {
                                         arpeggiator.bpm = newBPM
                                         quantizer.bpm = newBPM
                                     }
+                                TapTempoButton { newBPM in
+                                    metronome.bpm = newBPM
+                                    arpeggiator.bpm = newBPM
+                                    quantizer.bpm = newBPM
+                                }
                             }
 
                             Picker("", selection: $metronome.beatsPerBar) {
@@ -338,7 +343,7 @@ struct GateStepCell: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 2)
-                    .stroke(index % 4 == 0 ? Color.white.opacity(0.3) : Color.clear, lineWidth: 1)
+                    .stroke(index % 4 == 0 ? Color.primary.opacity(0.2) : Color.clear, lineWidth: 1)
             )
             .onTapGesture {
                 // Cycle: on -> accent -> tie -> off -> on
@@ -366,6 +371,67 @@ struct LegendDot: View {
         HStack(spacing: 2) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label)
+        }
+    }
+}
+
+// MARK: - Tap Tempo
+
+struct TapTempoButton: View {
+    let onBPM: (Double) -> Void
+
+    @State private var taps: [TimeInterval] = []
+    @State private var lastTapTime: TimeInterval = 0
+    @State private var isFlashing = false
+
+    private let maxTaps = 8
+    private let resetTimeout: TimeInterval = 2.0 // reset if no tap for 2s
+
+    var body: some View {
+        Button(action: tap) {
+            Text("Tap")
+                .font(.system(size: 9, weight: .medium))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isFlashing ? Color.accentColor.opacity(0.4) : Color(nsColor: .controlBackgroundColor))
+                )
+        }
+        .buttonStyle(.plain)
+        .help("Tap repeatedly to set BPM")
+    }
+
+    private func tap() {
+        let now = ProcessInfo.processInfo.systemUptime
+
+        // Reset if too long since last tap
+        if now - lastTapTime > resetTimeout {
+            taps.removeAll()
+        }
+
+        taps.append(now)
+        lastTapTime = now
+
+        // Keep only the last N taps
+        if taps.count > maxTaps {
+            taps.removeFirst()
+        }
+
+        // Need at least 2 taps to compute BPM
+        if taps.count >= 2 {
+            let totalInterval = taps.last! - taps.first!
+            let avgInterval = totalInterval / Double(taps.count - 1)
+            let bpm = 60.0 / avgInterval
+            // Clamp to reasonable range
+            let clamped = min(300, max(20, bpm))
+            onBPM(Double(Int(clamped * 10)) / 10.0) // round to 1 decimal
+        }
+
+        // Visual flash
+        isFlashing = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            isFlashing = false
         }
     }
 }
