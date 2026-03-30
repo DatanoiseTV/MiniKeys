@@ -76,11 +76,16 @@ struct ContentView: View {
                 Spacer()
 
                 Button(action: { keyboardState.allNotesOff() }) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
+                    HStack(spacing: 3) {
+                        Image(systemName: "xmark.octagon")
+                            .font(.system(size: 10))
+                        Text("Panic")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Panic — all notes off")
+                .help("All notes off")
 
                 PresetPanelView(presetManager: presetManager, layout: $layout)
             }

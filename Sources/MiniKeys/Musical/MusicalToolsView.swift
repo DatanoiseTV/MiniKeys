@@ -135,22 +135,14 @@ struct MusicalToolsView: View {
 
     private var metronomeSettings: some View {
         HStack(spacing: 10) {
-            HStack(spacing: 2) {
-                Text("BPM")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
-                TextField("", value: $metronome.bpm, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 42)
-                    .onChange(of: metronome.bpm) { _, newBPM in
-                        arpeggiator.bpm = newBPM
-                        quantizer.bpm = newBPM
-                    }
-                TapTempoButton { newBPM in
-                    metronome.bpm = newBPM
-                    arpeggiator.bpm = newBPM
-                    quantizer.bpm = newBPM
-                }
+            DraggableBPM(bpm: $metronome.bpm) { newBPM in
+                arpeggiator.bpm = newBPM
+                quantizer.bpm = newBPM
+            }
+            TapTempoButton { newBPM in
+                metronome.bpm = newBPM
+                arpeggiator.bpm = newBPM
+                quantizer.bpm = newBPM
             }
 
             Picker("", selection: $metronome.beatsPerBar) {
@@ -250,17 +242,9 @@ struct MusicalToolsView: View {
                 }
                 .fixedSize()
 
-                HStack(spacing: 2) {
-                    Text("BPM")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.tertiary)
-                    TextField("", value: $arpeggiator.bpm, format: .number)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 42)
-                        .onChange(of: arpeggiator.bpm) { _, newBPM in
-                            metronome.bpm = newBPM
-                            quantizer.bpm = newBPM
-                        }
+                DraggableBPM(bpm: $arpeggiator.bpm) { newBPM in
+                    metronome.bpm = newBPM
+                    quantizer.bpm = newBPM
                 }
 
                 Picker("", selection: $arpeggiator.division) {
@@ -532,6 +516,60 @@ struct LegendDot: View {
         HStack(spacing: 2) {
             Circle().fill(color).frame(width: 6, height: 6)
             Text(label)
+        }
+    }
+}
+
+// MARK: - Draggable BPM
+
+struct DraggableBPM: View {
+    @Binding var bpm: Double
+    var onSync: ((Double) -> Void)? = nil
+
+    @State private var isDragging = false
+    @State private var dragStart: Double = 0
+    @State private var isEditing = false
+
+    var body: some View {
+        if isEditing {
+            TextField("", value: $bpm, format: .number)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 48)
+                .font(.system(size: 10))
+                .onSubmit { isEditing = false; onSync?(bpm) }
+                .onExitCommand { isEditing = false }
+        } else {
+            HStack(spacing: 2) {
+                Text("BPM")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                Text("\(Int(bpm))")
+                    .font(.system(size: 11, weight: .medium))
+                    .frame(minWidth: 28, alignment: .trailing)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isDragging ? Color.accentColor.opacity(0.15) : Color(nsColor: .controlBackgroundColor))
+            )
+            .gesture(
+                DragGesture(minimumDistance: 2)
+                    .onChanged { value in
+                        if !isDragging {
+                            isDragging = true
+                            dragStart = bpm
+                        }
+                        // Drag up = faster, 1 BPM per 3 pixels
+                        let delta = -value.translation.height / 3.0
+                        let newBPM = min(300, max(20, dragStart + delta))
+                        bpm = Double(Int(newBPM))
+                        onSync?(bpm)
+                    }
+                    .onEnded { _ in isDragging = false }
+            )
+            .onTapGesture(count: 2) { isEditing = true }
+            .help("Drag up/down to change BPM. Double-click to type.")
         }
     }
 }
