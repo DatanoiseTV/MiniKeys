@@ -1,0 +1,67 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build universal binary
+        run: |
+          swift build -c release --arch arm64 --arch x86_64
+
+      - name: Create app bundle
+        run: |
+          APP_NAME="MiniKeys"
+          BINARY=".build/apple/Products/Release/${APP_NAME}"
+          BUNDLE="${APP_NAME}.app"
+
+          mkdir -p "${BUNDLE}/Contents/MacOS"
+          mkdir -p "${BUNDLE}/Contents/Resources"
+          cp "${BINARY}" "${BUNDLE}/Contents/MacOS/${APP_NAME}"
+          cp Resources/Info.plist "${BUNDLE}/Contents/"
+          codesign -s - --force "${BUNDLE}/Contents/MacOS/${APP_NAME}"
+
+      - name: Verify universal binary
+        run: |
+          file MiniKeys.app/Contents/MacOS/MiniKeys
+          lipo -info MiniKeys.app/Contents/MacOS/MiniKeys
+
+      - name: Create zip
+        run: |
+          ditto -c -k --keepParent MiniKeys.app MiniKeys-macOS-universal.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MiniKeys-macOS-universal
+          path: MiniKeys-macOS-universal.zip
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MiniKeys-macOS-universal.zip
+          generate_release_notes: true
+
+      - name: Create latest release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          prerelease: true
+          files: MiniKeys-macOS-universal.zip
+          body: |
+            Automated build from the latest commit on main.
+
+            Download `MiniKeys-macOS-universal.zip`, unzip, and run `MiniKeys.app`.
+            Requires macOS 14 (Sonoma) or later. Universal binary (Apple Silicon + Intel).
