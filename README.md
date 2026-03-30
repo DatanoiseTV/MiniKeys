@@ -2,6 +2,12 @@
 
 A macOS-native virtual MIDI keyboard and controller prototyping tool. MiniKeys presents itself as a virtual MIDI output visible to any DAW or synthesizer, while also supporting direct output to system MIDI destinations. It includes an Ableton-style computer keyboard layout, configurable CC controls, an arpeggiator, chord mode, metronome, live quantizer, scale enforcement, and a device preset browser with 300+ hardware synth MIDI mappings.
 
+## Screenshots
+
+<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 05 17" src="https://github.com/user-attachments/assets/7a13059a-3cda-4b7a-976b-2c14890a8aeb" />
+<img width="253" height="349" alt="Screenshot 2026-03-30 at 22 20 00" src="https://github.com/user-attachments/assets/4c294d9d-5e4d-4b27-b0cd-0d4e0d93f2c9" />
+<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 07 07" src="https://github.com/user-attachments/assets/602645a8-3a53-407f-8997-c7ed44a037f8" />
+
 ## Features
 
 ### Virtual MIDI Keyboard
