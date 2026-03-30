@@ -14,6 +14,13 @@ MiniKeys shows up as a virtual MIDI source that any app can see. It also support
 
 Download the latest build from [Releases](https://github.com/DatanoiseTV/MiniKeys/releases), unzip, and open `MiniKeys.app`. Requires macOS 14 (Sonoma) or later. Universal binary -- runs natively on both Apple Silicon and Intel.
 
+Since the app is not notarized, macOS will quarantine it on first launch. Remove the quarantine flag before opening:
+
+```
+xattr -cr MiniKeys.app
+open MiniKeys.app
+```
+
 Or build from source:
 
 ```
