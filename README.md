@@ -4,9 +4,10 @@ A macOS-native virtual MIDI keyboard and controller prototyping tool. MiniKeys p
 
 ## Screenshots
 
-<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 05 17" src="https://github.com/user-attachments/assets/7a13059a-3cda-4b7a-976b-2c14890a8aeb" />
-<img width="253" height="349" alt="Screenshot 2026-03-30 at 22 20 00" src="https://github.com/user-attachments/assets/4c294d9d-5e4d-4b27-b0cd-0d4e0d93f2c9" />
-<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 07 07" src="https://github.com/user-attachments/assets/602645a8-3a53-407f-8997-c7ed44a037f8" />
+<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 07 07" src="https://github.com/user-attachments/assets/0f2d4f9c-89c6-49da-895b-3048b2cc9bbe" />
+<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 06 25" src="https://github.com/user-attachments/assets/053d8147-0a7d-46b6-b117-1af6e4a6f4e3" />
+<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 05 17" src="https://github.com/user-attachments/assets/0e48c37e-8321-44ba-8fb9-0b26f0124c81" />
+
 
 ## Features
 
