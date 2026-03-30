@@ -5,10 +5,8 @@ A virtual MIDI keyboard and controller builder for macOS. Play notes with your c
 MiniKeys shows up as a virtual MIDI source that any app can see. It also supports direct output to hardware MIDI devices and can receive MIDI input from external keyboards.
 
 ## Screenshots
-
-<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 05 17" src="https://github.com/user-attachments/assets/0e48c37e-8321-44ba-8fb9-0b26f0124c81" />
-<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 06 25" src="https://github.com/user-attachments/assets/053d8147-0a7d-46b6-b117-1af6e4a6f4e3" />
-<img width="1256" height="803" alt="Screenshot 2026-03-30 at 22 07 07" src="https://github.com/user-attachments/assets/0f2d4f9c-89c6-49da-895b-3048b2cc9bbe" />
+<img width="1028" height="954" alt="Screenshot 2026-03-31 at 01 44 50" src="https://github.com/user-attachments/assets/ca6d1589-19fd-4d51-a4c6-7dfdf8ff8abd" />
+<img width="1028" height="954" alt="Screenshot 2026-03-31 at 01 45 17" src="https://github.com/user-attachments/assets/4acc3df1-43f3-426c-bd0a-8effd3e79909" />
 
 ## Getting Started
 
