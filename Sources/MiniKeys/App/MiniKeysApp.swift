@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct MiniKeysApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @State private var midiEngine = MIDIEngine()
     @State private var keyboardState: KeyboardState
 
@@ -20,5 +21,11 @@ struct MiniKeysApp: App {
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 660, height: 380)
+    }
+}
+
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        true
     }
 }

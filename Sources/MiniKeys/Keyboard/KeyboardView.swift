@@ -176,27 +176,27 @@ struct KeyboardView: View {
             HStack(spacing: 2) {
                 ForEach(0..<7, id: \.self) { i in
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.primary.opacity(0.04))
+                        .fill(Color.white.opacity(0.08))
                         .frame(width: ghostW, height: ghostH)
                         .overlay(
                             VStack {
                                 Spacer()
                                 Text(whiteNotes[i])
                                     .font(.system(size: 8))
-                                    .foregroundStyle(.primary.opacity(0.12))
+                                    .foregroundStyle(.secondary.opacity(0.3))
                                     .padding(.bottom, 4)
                             }
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 3)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 0.5)
+                                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
                         )
                 }
             }
 
             ForEach(blackPositions, id: \.self) { pos in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.primary.opacity(0.08))
+                    .fill(Color.white.opacity(0.04))
                     .frame(width: ghostBlackW, height: ghostBlackH)
                     .offset(
                         x: CGFloat(pos) * (ghostW + 2) + (ghostW - ghostBlackW / 2) + 1,
@@ -207,7 +207,7 @@ struct KeyboardView: View {
         .overlay(
             Text("C\(octaveNumber)")
                 .font(.system(size: 9))
-                .foregroundStyle(.primary.opacity(0.12))
+                .foregroundStyle(.secondary.opacity(0.3))
                 .padding(4),
             alignment: .topLeading
         )
@@ -223,7 +223,7 @@ struct WhiteKeyView: View {
         switch state {
         case .active: Color.accentColor.opacity(0.7)
         case .chordHighlight: Color.accentColor.opacity(0.25)
-        case .outOfScale, .inactive: Color(nsColor: .controlBackgroundColor)
+        case .outOfScale, .inactive: .white
         }
     }
 
@@ -231,22 +231,22 @@ struct WhiteKeyView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 4)
                 .fill(fillColor)
-                .shadow(color: .primary.opacity(0.15), radius: 1, y: 1)
+                .shadow(color: .black.opacity(0.2), radius: 1, y: 1)
 
             VStack {
                 Spacer()
                 Text(noteName)
                     .font(.caption2)
-                    .foregroundStyle(state == .active ? Color.white.opacity(0.7) : state == .outOfScale ? Color.gray.opacity(0.2) : .secondary)
+                    .foregroundStyle(state == .active ? Color.white.opacity(0.7) : state == .outOfScale ? Color.gray.opacity(0.3) : Color.gray)
                 Text(label)
                     .font(.system(.caption, design: .monospaced).bold())
-                    .foregroundStyle(state == .active ? .white : state == .outOfScale ? Color.gray.opacity(0.2) : .primary)
+                    .foregroundStyle(state == .active ? .white : state == .outOfScale ? Color.gray.opacity(0.3) : Color(white: 0.3))
                     .padding(.bottom, 6)
             }
         }
         .overlay(
             RoundedRectangle(cornerRadius: 4)
-                .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                .stroke(Color.black.opacity(0.2), lineWidth: 1)
         )
     }
 }
@@ -260,7 +260,7 @@ struct BlackKeyView: View {
         switch state {
         case .active: Color.accentColor
         case .chordHighlight: Color.accentColor.opacity(0.4)
-        case .outOfScale, .inactive: Color(nsColor: .shadowColor).opacity(0.7)
+        case .outOfScale, .inactive: Color(white: 0.2)
         }
     }
 
@@ -268,7 +268,7 @@ struct BlackKeyView: View {
         ZStack {
             RoundedRectangle(cornerRadius: 3)
                 .fill(fillColor)
-                .shadow(color: .primary.opacity(0.3), radius: 2, y: 2)
+                .shadow(color: .black.opacity(0.4), radius: 2, y: 2)
 
             VStack {
                 Spacer()
