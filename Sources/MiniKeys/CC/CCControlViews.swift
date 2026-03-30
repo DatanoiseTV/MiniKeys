@@ -306,7 +306,7 @@ struct ToggleControlView: View {
                     .frame(width: 44, height: 44)
                     .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
 
-                Image(systemName: control.isOn ? "power.circle.fill" : "power.circle")
+                Image(systemName: control.isOn ? "circle.inset.filled" : "circle")
                     .font(.system(size: 20))
                     .foregroundStyle(control.isOn ? .white : .gray.opacity(0.6))
             }
