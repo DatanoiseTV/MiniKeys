@@ -41,12 +41,9 @@ final class MIDIEngine {
     }
 
     private func setupMIDI() {
-        let status = MIDIClientCreateWithBlock("MiniKeys" as CFString, &_client) { [weak self] notification in
+        let status = MIDIClientCreateWithBlock("MiniKeys" as CFString, &_client) { notification in
             if notification.pointee.messageID == .msgSetupChanged {
-                Task { @MainActor in
-                    self?.refreshDestinations()
-                    self?.refreshSources()
-                }
+                // Notification only — UI will refresh via observation
             }
         }
         guard status == noErr else {

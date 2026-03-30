@@ -114,7 +114,7 @@ struct KeyboardView: View {
 
                 Spacer()
 
-                Text("Y: Oct\u{2193}  X: Oct\u{2191}  C/V: Vel  \u{21E7}: Sus")
+                Text("Y: Oct\u{2193}  X: Oct\u{2191}  C/V: Vel  Z: Sus")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

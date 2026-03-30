@@ -5,7 +5,6 @@ import Foundation
 final class KeyboardMonitor {
     private var keyDownMonitor: Any?
     private var keyUpMonitor: Any?
-    private var flagsMonitor: Any?
     private var mouseMonitor: Any?
     private let keyboardState: KeyboardState
 
@@ -40,21 +39,8 @@ final class KeyboardMonitor {
             return event
         }
 
-        // Modifier keys (Left Shift for sustain)
-        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            guard let self else { return event }
-            if self.isTextFieldFocused() { return event }
-            // Only respond when left shift key itself changes (keyCode 0x38)
-            guard event.keyCode == 0x38 else { return event }
-            // Check the device-independent flag for left shift specifically
-            let leftShiftDown = event.modifierFlags.rawValue & UInt(NX_DEVICELSHIFTKEYMASK) != 0
-            if leftShiftDown {
-                self.keyboardState.keyDown(keyCode: 0x38)
-            } else {
-                self.keyboardState.keyUp(keyCode: 0x38)
-            }
-            return event
-        }
+        // Ensure clean sustain state on start
+        keyboardState.forceSustainOff()
 
         // Click outside a text field -> resign first responder so keyboard works
         mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
@@ -79,10 +65,6 @@ final class KeyboardMonitor {
         if let monitor = keyUpMonitor {
             NSEvent.removeMonitor(monitor)
             keyUpMonitor = nil
-        }
-        if let monitor = flagsMonitor {
-            NSEvent.removeMonitor(monitor)
-            flagsMonitor = nil
         }
         if let monitor = mouseMonitor {
             NSEvent.removeMonitor(monitor)

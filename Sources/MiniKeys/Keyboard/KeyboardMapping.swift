@@ -45,7 +45,7 @@ struct KeyboardMapping {
 
         // Controls (by physical key position, layout-independent)
         // 0x10 = physical Y/Z key (rightmost top-left area)
-        0x38: .sustain,      // Left Shift - sustain
+        0x06: .sustain,      // Z (US) / Y (DE) - sustain
         0x10: .octaveDown,   // Y (US) / Z (DE) - octave down
         0x07: .octaveUp,     // X - octave up
         0x08: .velocityDown, // C - velocity down

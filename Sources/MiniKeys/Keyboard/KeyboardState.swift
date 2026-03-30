@@ -164,6 +164,11 @@ final class KeyboardState {
         }
     }
 
+    func forceSustainOff() {
+        sustainActive = false
+        midiEngine.sendCC(controller: 64, value: 0, channel: midiEngine.channel)
+    }
+
     // MARK: - Mouse input
 
     func mouseNoteOn(semitoneOffset: Int) {

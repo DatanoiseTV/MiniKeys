@@ -56,9 +56,8 @@ final class GamepadManager {
 
     /// Available axes on the selected gamepad
     var availableAxes: [String] {
-        guard let pad = selectedGamepad?.extendedGamepad else {
-            // Try micro gamepad
-            if let micro = selectedGamepad?.microGamepad {
+        guard selectedGamepad?.extendedGamepad != nil else {
+            if selectedGamepad?.microGamepad != nil {
                 return ["dpadX", "dpadY", "buttonA", "buttonX"]
             }
             return []
