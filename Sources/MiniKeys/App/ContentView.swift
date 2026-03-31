@@ -22,24 +22,23 @@ struct ContentView: View {
     var body: some View {
         @Bindable var engine = midiEngine
 
-        HStack(spacing: 0) {
-            // Macro sidebar (left)
-            if showMacroSidebar {
-                MacroSidebarView(engine: macroEngine, channel: midiEngine.channel)
-                Divider()
-            }
+        // HStack(spacing: 0) {
+            // Macro sidebar (disabled for now)
+            // if showMacroSidebar {
+            //     MacroSidebarView(engine: macroEngine, channel: midiEngine.channel)
+            //     Divider()
+            // }
 
         VStack(spacing: 0) {
             // Toolbar
             HStack(spacing: 12) {
-                // Sidebar toggle
-                Button(action: { showMacroSidebar.toggle() }) {
-                    Image(systemName: showMacroSidebar ? "sidebar.left" : "sidebar.left")
-                        .font(.system(size: 12))
-                        .foregroundStyle(showMacroSidebar ? Color.accentColor : .secondary)
-                }
-                .buttonStyle(.plain)
-                .help(showMacroSidebar ? "Hide macros" : "Show macros")
+                // Sidebar toggle (macro controls — disabled for now)
+                // Button(action: { showMacroSidebar.toggle() }) {
+                //     Image(systemName: "sidebar.left")
+                //         .font(.system(size: 12))
+                //         .foregroundStyle(showMacroSidebar ? Color.accentColor : .secondary)
+                // }
+                // .buttonStyle(.plain)
 
                 HStack(spacing: 4) {
                     Image(systemName: "cable.connector")
@@ -176,8 +175,7 @@ struct ContentView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 6)
         }
-        .frame(maxWidth: .infinity)
-        } // HStack
+        // } // HStack
         .frame(minWidth: 700)
         .background(Color(nsColor: .underPageBackgroundColor))
         .onAppear {
