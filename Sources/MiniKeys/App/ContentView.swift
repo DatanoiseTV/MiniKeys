@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var historyManager = CCHistoryManager()
     @State private var keyboardMonitor: KeyboardMonitor?
     @State private var showDeviceBrowser = false
+    @State private var learningControlID: UUID? = nil
 
     var body: some View {
         @Bindable var engine = midiEngine
@@ -99,7 +100,7 @@ struct ContentView: View {
             // CC Panel
             CCPanelView(layout: $layout, onValueChange: { control, value in
                 sendControlValue(control: control, value: value)
-            }, historyManager: historyManager)
+            }, historyManager: historyManager, learningControlID: $learningControlID)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
 
@@ -150,6 +151,14 @@ struct ContentView: View {
 
             // Wire incoming MIDI CC to update on-screen controls (bidirectional feedback)
             midiEngine.onExternalCC = { [self] (cc: UInt8, value: UInt8) in
+                // MIDI Learn: if a control is in learning mode, assign the received CC number
+                if let learnID = learningControlID,
+                   let idx = layout.controls.firstIndex(where: { $0.id == learnID }) {
+                    layout.controls[idx].ccNumber = cc
+                    layout.controls[idx].messageType = .cc
+                    learningControlID = nil
+                    return
+                }
                 updateControlFromMIDI(cc: cc, value: value)
             }
 

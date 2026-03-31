@@ -6,9 +6,11 @@ struct CCControlView: View {
     @Binding var control: CCControl
     let isSelected: Bool
     let editMode: Bool
+    let isLearning: Bool
     let onValueChange: (CCControl, UInt8) -> Void
     let onSelect: () -> Void
     let onDelete: () -> Void
+    var onLearn: (() -> Void)? = nil
 
     @ViewBuilder
     private var controlContent: some View {
@@ -43,6 +45,31 @@ struct CCControlView: View {
                 )
         )
         .overlay {
+            if isLearning {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.orange, lineWidth: 2)
+                    .phaseAnimator([false, true]) { content, phase in
+                        content.opacity(phase ? 1.0 : 0.3)
+                    } animation: { _ in
+                        .easeInOut(duration: 0.6)
+                    }
+            }
+        }
+        .overlay {
+            if isLearning {
+                VStack {
+                    Spacer()
+                    Text("Learning...")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.orange))
+                        .padding(.bottom, 4)
+                }
+            }
+        }
+        .overlay {
             // In edit mode, cover with a transparent tap target
             if editMode {
                 Color.clear
@@ -51,6 +78,9 @@ struct CCControlView: View {
             }
         }
         .contextMenu {
+            if let onLearn {
+                Button("MIDI Learn") { onLearn() }
+            }
             if editMode {
                 Button("Delete", role: .destructive) { onDelete() }
             }

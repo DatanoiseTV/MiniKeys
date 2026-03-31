@@ -4,6 +4,7 @@ struct CCPanelView: View {
     @Binding var layout: ControlLayout
     let onValueChange: (CCControl, UInt8) -> Void
     @Bindable var historyManager: CCHistoryManager
+    @Binding var learningControlID: UUID?
 
     @State private var editMode = false
     @State private var selectedControlIDs: Set<UUID> = []
@@ -191,6 +192,7 @@ struct CCPanelView: View {
                             containerWidth: geo.size.width - 16,
                             selectedControlIDs: $selectedControlIDs,
                             layout: $layout,
+                            learningControlID: $learningControlID,
                             onValueChange: onValueChange,
                             onDeleteGroup: { deleteGroup(group) }
                         )
@@ -203,9 +205,13 @@ struct CCPanelView: View {
                                 control: $layout.controls[idx],
                                 isSelected: editMode && selectedControlIDs.contains(control.id),
                                 editMode: editMode,
+                                isLearning: learningControlID == control.id,
                                 onValueChange: onValueChange,
                                 onSelect: { toggleSelect(control.id) },
-                                onDelete: { deleteControl(control.id) }
+                                onDelete: { deleteControl(control.id) },
+                                onLearn: {
+                                    learningControlID = learningControlID == control.id ? nil : control.id
+                                }
                             )
                         }
                     }
@@ -328,6 +334,7 @@ struct GroupView: View {
     var containerWidth: CGFloat? = nil
     @Binding var selectedControlIDs: Set<UUID>
     @Binding var layout: ControlLayout
+    @Binding var learningControlID: UUID?
     let onValueChange: (CCControl, UInt8) -> Void
     let onDeleteGroup: () -> Void
 
@@ -388,6 +395,7 @@ struct GroupView: View {
                                 control: $layout.controls[idx],
                                 isSelected: editMode && selectedControlIDs.contains(control.id),
                                 editMode: editMode,
+                                isLearning: learningControlID == control.id,
                                 onValueChange: onValueChange,
                                 onSelect: {
                                     guard editMode else { return }
@@ -402,6 +410,9 @@ struct GroupView: View {
                                 onDelete: {
                                     selectedControlIDs.remove(control.id)
                                     layout.controls.removeAll { $0.id == control.id }
+                                },
+                                onLearn: {
+                                    learningControlID = learningControlID == control.id ? nil : control.id
                                 }
                             )
                         }
