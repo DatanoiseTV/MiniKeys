@@ -13,6 +13,8 @@ struct ContentView: View {
     @State private var keyboardMonitor: KeyboardMonitor?
     @State private var showDeviceBrowser = false
     @State private var learningControlID: UUID? = nil
+    @State private var autoLearnMode = false
+    @State private var autoLearnedCCs: Set<UInt8> = []
 
     var body: some View {
         @Bindable var engine = midiEngine
@@ -76,6 +78,25 @@ struct ContentView: View {
                 .help("Browse device MIDI mappings")
 
                 Spacer()
+
+                // Auto-learn toggle
+                Button(action: {
+                    autoLearnMode.toggle()
+                    if !autoLearnMode { autoLearnedCCs.removeAll() }
+                }) {
+                    HStack(spacing: 3) {
+                        Circle()
+                            .fill(autoLearnMode ? Color.red : Color.gray.opacity(0.3))
+                            .frame(width: 7, height: 7)
+                        Text(autoLearnMode ? "Stop Learn" : "Auto Learn")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundStyle(autoLearnMode ? .red : .secondary)
+                }
+                .buttonStyle(.plain)
+                .help(autoLearnMode
+                    ? "Stop auto-learning. \(autoLearnedCCs.count) CCs captured."
+                    : "Start auto-learn: incoming CCs create new knob controls automatically")
 
                 Button(action: { keyboardState.allNotesOff() }) {
                     HStack(spacing: 3) {
@@ -159,6 +180,23 @@ struct ContentView: View {
                     learningControlID = nil
                     return
                 }
+
+                // Auto-learn: create a new knob for each unseen CC
+                if autoLearnMode && !autoLearnedCCs.contains(cc) {
+                    // Skip reserved CCs (sustain, all notes off, etc.)
+                    if cc < 120 {
+                        autoLearnedCCs.insert(cc)
+                        var control = CCControl(
+                            type: .knob,
+                            label: "CC \(cc)",
+                            ccNumber: cc,
+                            currentValue: value
+                        )
+                        control.messageType = .cc
+                        layout.controls.append(control)
+                    }
+                }
+
                 updateControlFromMIDI(cc: cc, value: value)
             }
 
