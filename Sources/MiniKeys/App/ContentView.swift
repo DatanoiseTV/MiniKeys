@@ -26,7 +26,6 @@ struct ContentView: View {
             // Macro sidebar (left)
             if showMacroSidebar {
                 MacroSidebarView(engine: macroEngine, channel: midiEngine.channel)
-                    .transition(.move(edge: .leading))
                 Divider()
             }
 
@@ -34,7 +33,7 @@ struct ContentView: View {
             // Toolbar
             HStack(spacing: 12) {
                 // Sidebar toggle
-                Button(action: { withAnimation(.easeInOut(duration: 0.15)) { showMacroSidebar.toggle() } }) {
+                Button(action: { showMacroSidebar.toggle() }) {
                     Image(systemName: showMacroSidebar ? "sidebar.left" : "sidebar.left")
                         .font(.system(size: 12))
                         .foregroundStyle(showMacroSidebar ? Color.accentColor : .secondary)
@@ -179,7 +178,7 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity)
         } // HStack
-        .frame(minWidth: showMacroSidebar ? 900 : 700)
+        .frame(minWidth: 700)
         .background(Color(nsColor: .underPageBackgroundColor))
         .onAppear {
             let monitor = KeyboardMonitor(keyboardState: keyboardState)
