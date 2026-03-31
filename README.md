@@ -7,6 +7,7 @@ MiniKeys shows up as a virtual MIDI source that any app can see. It also support
 ## Screenshots
 <img width="1028" height="954" alt="Screenshot 2026-03-31 at 01 44 50" src="https://github.com/user-attachments/assets/ca6d1589-19fd-4d51-a4c6-7dfdf8ff8abd" />
 <img width="1028" height="954" alt="Screenshot 2026-03-31 at 01 45 17" src="https://github.com/user-attachments/assets/4acc3df1-43f3-426c-bd0a-8effd3e79909" />
+<img width="923" height="463" alt="Screenshot 2026-03-31 at 02 28 22" src="https://github.com/user-attachments/assets/174fe0aa-4244-4621-8081-fa62b154ec18" />
 
 ## Getting Started
 
