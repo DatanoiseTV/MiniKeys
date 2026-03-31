@@ -8,7 +8,7 @@ struct CCControlView: View {
     let editMode: Bool
     let isLearning: Bool
     let onValueChange: (CCControl, UInt8) -> Void
-    let onSelect: () -> Void
+    let onSelect: (Bool) -> Void  // Bool = shift held (extend selection)
     let onDelete: () -> Void
     var onLearn: (() -> Void)? = nil
 
@@ -74,7 +74,10 @@ struct CCControlView: View {
             if editMode {
                 Color.clear
                     .contentShape(Rectangle())
-                    .onTapGesture { onSelect() }
+                    .onTapGesture {
+                        let shiftHeld = NSEvent.modifierFlags.contains(.shift)
+                        onSelect(shiftHeld)
+                    }
             }
         }
         .contextMenu {

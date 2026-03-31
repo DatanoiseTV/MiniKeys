@@ -207,7 +207,7 @@ struct CCPanelView: View {
                                 editMode: editMode,
                                 isLearning: learningControlID == control.id,
                                 onValueChange: onValueChange,
-                                onSelect: { toggleSelect(control.id) },
+                                onSelect: { shift in toggleSelect(control.id, extending: shift) },
                                 onDelete: { deleteControl(control.id) },
                                 onLearn: {
                                     learningControlID = learningControlID == control.id ? nil : control.id
@@ -226,6 +226,35 @@ struct CCPanelView: View {
                 .padding(8)
             }
             .frame(minHeight: 80)
+            .contextMenu {
+                Menu("Add Control") {
+                    ForEach(CCControlType.allCases, id: \.self) { type in
+                        Button {
+                            addControl(type: type)
+                        } label: {
+                            Label(type.displayName, systemImage: type.icon)
+                        }
+                    }
+                }
+                Button {
+                    addGroup()
+                } label: {
+                    Label("New Group", systemImage: "rectangle.3.group")
+                }
+                if !selectedControlIDs.isEmpty {
+                    Divider()
+                    if selectedControlIDs.count >= 2 {
+                        Button("Group Selected (\(selectedControlIDs.count))") {
+                            groupSelected()
+                        }
+                    }
+                    Button("Delete Selected", role: .destructive) {
+                        for id in selectedControlIDs {
+                            deleteControl(id)
+                        }
+                    }
+                }
+            }
             } // GeometryReader
 
             // Inline editor inside the VStack, pinned at bottom of panel
@@ -250,13 +279,23 @@ struct CCPanelView: View {
         }
     } // body
 
-    private func toggleSelect(_ id: UUID) {
+    private func toggleSelect(_ id: UUID, extending: Bool = false) {
         guard editMode else { return }
         withAnimation(.easeInOut(duration: 0.15)) {
-            if selectedControlIDs.contains(id) {
-                selectedControlIDs.remove(id)
+            if extending {
+                // Shift-click: toggle this item in the selection
+                if selectedControlIDs.contains(id) {
+                    selectedControlIDs.remove(id)
+                } else {
+                    selectedControlIDs.insert(id)
+                }
             } else {
-                selectedControlIDs.insert(id)
+                // Plain click: select only this item (or deselect if already the only one)
+                if selectedControlIDs == [id] {
+                    selectedControlIDs.removeAll()
+                } else {
+                    selectedControlIDs = [id]
+                }
             }
         }
     }
@@ -397,13 +436,18 @@ struct GroupView: View {
                                 editMode: editMode,
                                 isLearning: learningControlID == control.id,
                                 onValueChange: onValueChange,
-                                onSelect: {
+                                onSelect: { shift in
                                     guard editMode else { return }
+                                    let id = control.id
                                     withAnimation(.easeInOut(duration: 0.15)) {
-                                        if selectedControlIDs.contains(control.id) {
-                                            selectedControlIDs.remove(control.id)
+                                        if shift {
+                                            if selectedControlIDs.contains(id) {
+                                                selectedControlIDs.remove(id)
+                                            } else {
+                                                selectedControlIDs.insert(id)
+                                            }
                                         } else {
-                                            selectedControlIDs.insert(control.id)
+                                            selectedControlIDs = selectedControlIDs == [id] ? [] : [id]
                                         }
                                     }
                                 },
