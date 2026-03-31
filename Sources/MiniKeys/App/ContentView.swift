@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var learningControlID: UUID? = nil
     @State private var autoLearnMode = false
     @State private var autoLearnedCCs: Set<UInt8> = []
+    @State private var lastSavedLayout = ControlLayout()
 
     var body: some View {
         @Bindable var engine = midiEngine
@@ -98,24 +99,26 @@ struct ContentView: View {
 
                 Spacer()
 
-                // Auto-learn toggle
-                Button(action: {
-                    autoLearnMode.toggle()
-                    if !autoLearnMode { autoLearnedCCs.removeAll() }
-                }) {
-                    HStack(spacing: 3) {
-                        Circle()
-                            .fill(autoLearnMode ? Color.red : Color.gray.opacity(0.3))
-                            .frame(width: 7, height: 7)
-                        Text(autoLearnMode ? "Stop Learn" : "Auto Learn")
-                            .font(.system(size: 10))
+                // Auto-learn toggle (only when MIDI input is connected)
+                if midiEngine.selectedSourceID != nil || autoLearnMode {
+                    Button(action: {
+                        autoLearnMode.toggle()
+                        if !autoLearnMode { autoLearnedCCs.removeAll() }
+                    }) {
+                        HStack(spacing: 3) {
+                            Circle()
+                                .fill(autoLearnMode ? Color.red : Color.gray.opacity(0.3))
+                                .frame(width: 7, height: 7)
+                            Text(autoLearnMode ? "Stop Learn" : "Auto Learn")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundStyle(autoLearnMode ? .red : .secondary)
                     }
-                    .foregroundStyle(autoLearnMode ? .red : .secondary)
+                    .buttonStyle(.plain)
+                    .help(autoLearnMode
+                        ? "Stop auto-learning. \(autoLearnedCCs.count) CCs captured."
+                        : "Start auto-learn: incoming CCs create new knob controls automatically")
                 }
-                .buttonStyle(.plain)
-                .help(autoLearnMode
-                    ? "Stop auto-learning. \(autoLearnedCCs.count) CCs captured."
-                    : "Start auto-learn: incoming CCs create new knob controls automatically")
 
                 Button(action: { keyboardState.allNotesOff() }) {
                     HStack(spacing: 3) {
@@ -181,6 +184,16 @@ struct ContentView: View {
             let monitor = KeyboardMonitor(keyboardState: keyboardState)
             monitor.start()
             keyboardMonitor = monitor
+
+            // Wire unsaved changes detection
+            if let delegate = NSApp.delegate as? AppDelegate {
+                delegate.hasUnsavedChanges = { [self] in layout != lastSavedLayout }
+                delegate.onSaveRequested = { [self] in
+                    let name = presetManager.currentPresetName ?? "Untitled"
+                    presetManager.save(name: name, layout: layout)
+                    lastSavedLayout = layout
+                }
+            }
 
             // Wire macro engine to send CCs
             macroEngine.onSendCC = { [self] (cc: UInt8, value: UInt8, ch: UInt8) in

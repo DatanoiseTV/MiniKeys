@@ -10,6 +10,9 @@ struct CCPanelView: View {
     @State private var selectedControlIDs: Set<UUID> = []
     @State private var showSnapshotSave = false
     @State private var snapshotName = ""
+    @State private var snapshotToDelete: UUID? = nil
+    @State private var showSnapshotDeleteConfirm = false
+    @State private var skipSnapshotDeleteConfirm = false
 
     // For inline editor: show editor for the last-selected control
     private var primarySelectedID: UUID? {
@@ -77,11 +80,16 @@ struct CCPanelView: View {
                             }
                         }
                         Divider()
-                        Menu("Delete") {
-                            ForEach(historyManager.savedSnapshots) { snap in
-                                Button(snap.name, role: .destructive) {
+                        ForEach(historyManager.savedSnapshots) { snap in
+                            Button(role: .destructive) {
+                                if skipSnapshotDeleteConfirm {
                                     historyManager.deleteSnapshot(snap.id)
+                                } else {
+                                    snapshotToDelete = snap.id
+                                    showSnapshotDeleteConfirm = true
                                 }
+                            } label: {
+                                Label("Delete \(snap.name)", systemImage: "trash")
                             }
                         }
                     }
@@ -276,6 +284,24 @@ struct CCPanelView: View {
             Button("Cancel", role: .cancel) { snapshotName = "" }
         } message: {
             Text("Save current control values as a snapshot")
+        }
+        .alert("Delete Snapshot", isPresented: $showSnapshotDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                if let id = snapshotToDelete {
+                    historyManager.deleteSnapshot(id)
+                    snapshotToDelete = nil
+                }
+            }
+            Button("Delete (Don't ask again)", role: .destructive) {
+                if let id = snapshotToDelete {
+                    historyManager.deleteSnapshot(id)
+                    snapshotToDelete = nil
+                    skipSnapshotDeleteConfirm = true
+                }
+            }
+            Button("Cancel", role: .cancel) { snapshotToDelete = nil }
+        } message: {
+            Text("This cannot be undone.")
         }
     } // body
 

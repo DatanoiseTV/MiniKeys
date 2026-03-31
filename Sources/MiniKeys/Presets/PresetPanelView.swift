@@ -9,6 +9,9 @@ struct PresetPanelView: View {
     @State private var showExportCSV = false
     @State private var exportManufacturer = ""
     @State private var exportDevice = ""
+    @State private var presetToDelete: String? = nil
+    @State private var showDeleteConfirm = false
+    @State private var skipDeleteConfirm = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -26,19 +29,18 @@ struct PresetPanelView: View {
                     Text("No saved presets")
                 } else {
                     ForEach(presetManager.presets, id: \.self) { name in
-                        Button(name) {
+                        PresetMenuRow(name: name, onLoad: {
                             if let loaded = presetManager.load(name: name) {
                                 layout = loaded
                             }
-                        }
-                    }
-                    Divider()
-                    Menu("Delete") {
-                        ForEach(presetManager.presets, id: \.self) { name in
-                            Button(name, role: .destructive) {
+                        }, onDelete: {
+                            if skipDeleteConfirm {
                                 presetManager.delete(name: name)
+                            } else {
+                                presetToDelete = name
+                                showDeleteConfirm = true
                             }
-                        }
+                        })
                     }
                 }
                 Divider()
@@ -101,6 +103,47 @@ struct PresetPanelView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Enter manufacturer and device name for the CSV export")
+        }
+        .alert("Delete Preset", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                if let name = presetToDelete {
+                    presetManager.delete(name: name)
+                    presetToDelete = nil
+                }
+            }
+            Button("Delete (Don't ask again)", role: .destructive) {
+                if let name = presetToDelete {
+                    presetManager.delete(name: name)
+                    presetToDelete = nil
+                    skipDeleteConfirm = true
+                }
+            }
+            Button("Cancel", role: .cancel) { presetToDelete = nil }
+        } message: {
+            Text("Delete \"\(presetToDelete ?? "")\"? This cannot be undone.")
+        }
+    }
+}
+
+// MARK: - Preset Menu Row with hover delete
+
+struct PresetMenuRow: View {
+    let name: String
+    let onLoad: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        Button(action: onLoad) {
+            HStack {
+                Text(name)
+                Spacer()
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.red.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
