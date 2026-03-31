@@ -81,6 +81,14 @@ struct DeviceBrowserView: View {
                 .buttonStyle(.plain)
                 .disabled(dbManager.isLoading)
                 .help(dbManager.index.manufacturers.isEmpty ? "Download database" : "Update")
+
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Close")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
