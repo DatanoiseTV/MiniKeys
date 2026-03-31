@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var presetManager = PresetManager()
     @State private var dbManager = DeviceDBManager()
     @State private var gamepadManager = GamepadManager()
+    @State private var historyManager = CCHistoryManager()
     @State private var keyboardMonitor: KeyboardMonitor?
     @State private var showDeviceBrowser = false
 
@@ -96,9 +97,9 @@ struct ContentView: View {
             Divider()
 
             // CC Panel
-            CCPanelView(layout: $layout) { control, value in
+            CCPanelView(layout: $layout, onValueChange: { control, value in
                 sendControlValue(control: control, value: value)
-            }
+            }, historyManager: historyManager)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
 

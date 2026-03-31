@@ -3,9 +3,12 @@ import SwiftUI
 struct CCPanelView: View {
     @Binding var layout: ControlLayout
     let onValueChange: (CCControl, UInt8) -> Void
+    @Bindable var historyManager: CCHistoryManager
 
     @State private var editMode = false
     @State private var selectedControlIDs: Set<UUID> = []
+    @State private var showSnapshotSave = false
+    @State private var snapshotName = ""
 
     // For inline editor: show editor for the last-selected control
     private var primarySelectedID: UUID? {
@@ -32,6 +35,64 @@ struct CCPanelView: View {
                 Text("CC Controls")
                     .font(.system(.caption))
                     .foregroundStyle(.secondary)
+
+                // Undo/Redo
+                if editMode {
+                    HStack(spacing: 2) {
+                        Button(action: {
+                            if let prev = historyManager.undo(current: layout) {
+                                layout = prev
+                            }
+                        }) {
+                            Image(systemName: "arrow.uturn.backward")
+                                .font(.system(size: 10))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!historyManager.canUndo)
+
+                        Button(action: {
+                            if let next = historyManager.redo(current: layout) {
+                                layout = next
+                            }
+                        }) {
+                            Image(systemName: "arrow.uturn.forward")
+                                .font(.system(size: 10))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!historyManager.canRedo)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+
+                // Snapshots
+                Menu {
+                    Button("Save Snapshot...") { showSnapshotSave = true }
+                    if !historyManager.savedSnapshots.isEmpty {
+                        Divider()
+                        ForEach(historyManager.savedSnapshots) { snap in
+                            Button(snap.name) {
+                                historyManager.pushUndo(layout: layout, description: "Load snapshot")
+                                historyManager.applySnapshot(snap, to: &layout)
+                            }
+                        }
+                        Divider()
+                        Menu("Delete") {
+                            ForEach(historyManager.savedSnapshots) { snap in
+                                Button(snap.name, role: .destructive) {
+                                    historyManager.deleteSnapshot(snap.id)
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "camera")
+                        .font(.system(size: 10))
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .foregroundStyle(.secondary)
+                .help("Snapshots — save and recall control values")
+
                 Spacer()
 
                 if editMode {
@@ -160,17 +221,28 @@ struct CCPanelView: View {
             }
             .frame(minHeight: 80)
             } // GeometryReader
-        }
 
-        // Inline editor outside the scroll, pinned at bottom of panel
-        if let idx = primarySelectedIndex {
-            CCInlineEditor(
-                control: $layout.controls[idx],
-                groups: layout.groups,
-                onDelete: { deleteControl(layout.controls[idx].id) }
-            )
+            // Inline editor inside the VStack, pinned at bottom of panel
+            if let idx = primarySelectedIndex {
+                CCInlineEditor(
+                    control: $layout.controls[idx],
+                    groups: layout.groups,
+                    onDelete: { deleteControl(layout.controls[idx].id) }
+                )
+            }
+        } // VStack
+        .alert("Save Snapshot", isPresented: $showSnapshotSave) {
+            TextField("Name", text: $snapshotName)
+            Button("Save") {
+                guard !snapshotName.isEmpty else { return }
+                historyManager.takeSnapshot(name: snapshotName, from: layout)
+                snapshotName = ""
+            }
+            Button("Cancel", role: .cancel) { snapshotName = "" }
+        } message: {
+            Text("Save current control values as a snapshot")
         }
-    }
+    } // body
 
     private func toggleSelect(_ id: UUID) {
         guard editMode else { return }
@@ -184,6 +256,7 @@ struct CCPanelView: View {
     }
 
     private func addControl(type: CCControlType) {
+        historyManager.pushUndo(layout: layout, description: "Add \(type.displayName)")
         let nextCC = UInt8(layout.controls.count + 1)
         var control = CCControl(
             type: type,
@@ -230,11 +303,13 @@ struct CCPanelView: View {
     }
 
     private func deleteControl(_ id: UUID) {
+        historyManager.pushUndo(layout: layout, description: "Delete control")
         selectedControlIDs.remove(id)
         layout.controls.removeAll { $0.id == id }
     }
 
     private func deleteGroup(_ group: CCGroup) {
+        historyManager.pushUndo(layout: layout, description: "Delete group")
         for i in layout.controls.indices {
             if layout.controls[i].groupID == group.id {
                 layout.controls[i].groupID = nil
