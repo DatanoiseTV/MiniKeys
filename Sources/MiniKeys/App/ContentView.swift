@@ -22,9 +22,25 @@ struct ContentView: View {
         @Bindable var engine = midiEngine
 
         HStack(spacing: 0) {
+            // Macro sidebar (left)
+            if showMacroSidebar {
+                MacroSidebarView(engine: macroEngine, channel: midiEngine.channel)
+                    .transition(.move(edge: .leading))
+                Divider()
+            }
+
         VStack(spacing: 0) {
             // Toolbar
             HStack(spacing: 12) {
+                // Sidebar toggle
+                Button(action: { withAnimation(.easeInOut(duration: 0.15)) { showMacroSidebar.toggle() } }) {
+                    Image(systemName: showMacroSidebar ? "sidebar.left" : "sidebar.left")
+                        .font(.system(size: 12))
+                        .foregroundStyle(showMacroSidebar ? Color.accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .help(showMacroSidebar ? "Hide macros" : "Show macros")
+
                 HStack(spacing: 4) {
                     Image(systemName: "cable.connector")
                         .foregroundStyle(.secondary)
@@ -113,18 +129,6 @@ struct ContentView: View {
                 .buttonStyle(.plain)
                 .help("All notes off")
 
-                Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showMacroSidebar.toggle() } }) {
-                    HStack(spacing: 3) {
-                        Image(systemName: "slider.horizontal.2.square")
-                            .font(.system(size: 10))
-                        Text("Macros")
-                            .font(.system(size: 10))
-                    }
-                    .foregroundStyle(showMacroSidebar ? Color.accentColor : .secondary)
-                }
-                .buttonStyle(.plain)
-                .help("Toggle macro controls sidebar")
-
                 PresetPanelView(presetManager: presetManager, layout: $layout)
             }
             .padding(.horizontal, 12)
@@ -170,13 +174,6 @@ struct ContentView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 6)
         }
-
-            // Macro sidebar
-            if showMacroSidebar {
-                Divider()
-                MacroSidebarView(engine: macroEngine, channel: midiEngine.channel)
-                    .transition(.move(edge: .trailing))
-            }
         }
         .frame(minWidth: 700)
         .background(Color(nsColor: .underPageBackgroundColor))

@@ -9,63 +9,65 @@ struct MacroSidebarView: View {
             // Header
             HStack {
                 Text("Macros")
-                    .font(.system(.caption, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(.body, weight: .semibold))
                 Spacer()
                 Button(action: { engine.addMacro() }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .bold))
+                    Image(systemName: "plus.circle")
+                        .font(.system(size: 14))
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
+                .help("Add macro")
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
 
             Divider()
 
             if engine.macros.isEmpty {
                 VStack(spacing: 8) {
                     Spacer()
-                    Text("No macros")
+                    Image(systemName: "slider.horizontal.2.square")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.quaternary)
+                    Text("Add a macro to control\nmultiple CCs at once")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
-                    Text("Click + to add one")
-                        .font(.caption2)
-                        .foregroundStyle(.quaternary)
+                        .multilineTextAlignment(.center)
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 14) {
                         ForEach($engine.macros) { $macro in
-                            MacroControlView(
+                            MacroCardView(
                                 macro: $macro,
                                 channel: channel,
                                 engine: engine
                             )
                         }
                     }
-                    .padding(10)
+                    .padding(12)
                 }
             }
         }
-        .frame(width: 180)
-        .background(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        .frame(width: 200)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.2))
     }
 }
 
-// MARK: - Single Macro Control
+// MARK: - Macro Card
 
-struct MacroControlView: View {
+struct MacroCardView: View {
     @Binding var macro: MacroControl
     let channel: UInt8
     let engine: MacroEngine
 
     @State private var isDragging = false
     @State private var dragStart: Double = 0
-    @State private var isExpanded = false
+    @State private var showMappings = false
+    @State private var isRenaming = false
 
     private var normalizedValue: Double {
         Double(macro.value) / 127.0
@@ -83,33 +85,43 @@ struct MacroControlView: View {
     }
 
     var body: some View {
-        VStack(spacing: 6) {
-            // Label
-            Text(macro.label)
-                .font(.system(.caption))
-                .lineLimit(1)
+        VStack(spacing: 8) {
+            // Label (double-click to rename)
+            if isRenaming {
+                TextField("", text: $macro.label)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.caption))
+                    .multilineTextAlignment(.center)
+                    .onSubmit { isRenaming = false }
+                    .onExitCommand { isRenaming = false }
+            } else {
+                Text(macro.label)
+                    .font(.system(.caption, weight: .medium))
+                    .lineLimit(1)
+                    .onTapGesture(count: 2) { isRenaming = true }
+            }
 
             // Knob
             ZStack {
                 KnobArc(normalized: 1.0)
-                    .stroke(Color.gray.opacity(0.2), style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 50, height: 50)
+                    .stroke(Color.gray.opacity(0.2), style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                    .frame(width: 56, height: 56)
 
                 if normalizedValue > 0 {
                     KnobArc(normalized: normalizedValue)
-                        .stroke(accentColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                        .frame(width: 50, height: 50)
+                        .stroke(accentColor, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                        .frame(width: 56, height: 56)
                 }
 
                 Circle()
                     .fill(Color(nsColor: .controlBackgroundColor))
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .shadow(color: .black.opacity(0.15), radius: 2)
 
                 Rectangle()
                     .fill(accentColor)
-                    .frame(width: 2, height: 14)
-                    .offset(y: -10)
+                    .frame(width: 2, height: 16)
+                    .offset(y: -12)
                     .rotationEffect(.degrees(225 + normalizedValue * 270))
             }
             .gesture(
@@ -127,55 +139,84 @@ struct MacroControlView: View {
                     .onEnded { _ in isDragging = false }
             )
 
-            // Value
             Text("\(macro.value)")
-                .font(.system(size: 10))
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
 
-            // Morph slider
-            HStack(spacing: 4) {
-                Text("A")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.tertiary)
-                Slider(value: Binding(
-                    get: {
-                        let a = Double(macro.morphA)
-                        let b = Double(macro.morphB)
-                        guard b != a else { return 0 }
-                        return (Double(macro.value) - a) / (b - a)
-                    },
-                    set: { pos in
-                        engine.morphTo(macro.id, position: max(0, min(1, pos)), channel: channel)
-                    }
-                ), in: 0...1)
-                Text("B")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.tertiary)
+            // Morph A/B
+            VStack(spacing: 2) {
+                HStack(spacing: 6) {
+                    Button("A") { engine.saveMorphA(macro.id) }
+                        .font(.system(size: 9, weight: .bold))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.tertiary)
+                        .help("Save current position as Morph A (\(macro.morphA))")
+
+                    Slider(value: Binding(
+                        get: {
+                            let a = Double(macro.morphA)
+                            let b = Double(macro.morphB)
+                            guard b != a else { return 0 }
+                            return max(0, min(1, (Double(macro.value) - a) / (b - a)))
+                        },
+                        set: { pos in
+                            engine.morphTo(macro.id, position: max(0, min(1, pos)), channel: channel)
+                        }
+                    ), in: 0...1)
+
+                    Button("B") { engine.saveMorphB(macro.id) }
+                        .font(.system(size: 9, weight: .bold))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.tertiary)
+                        .help("Save current position as Morph B (\(macro.morphB))")
+                }
+
+                Text("Morph \(macro.morphA) \u{2194} \(macro.morphB)")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.quaternary)
             }
 
-            // Expand/collapse mappings
-            Button(action: { withAnimation(.easeInOut(duration: 0.15)) { isExpanded.toggle() } }) {
+            // Mappings toggle
+            Button(action: { withAnimation(.easeInOut(duration: 0.12)) { showMappings.toggle() } }) {
                 HStack(spacing: 3) {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: showMappings ? "chevron.up" : "chevron.down")
                         .font(.system(size: 7))
-                    Text("\(macro.mappings.count) mappings")
+                    Text("\(macro.mappings.count) mapping\(macro.mappings.count == 1 ? "" : "s")")
                         .font(.system(size: 9))
                 }
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
 
-            if isExpanded {
-                MacroMappingsEditor(macro: $macro, engine: engine, channel: channel)
+            if showMappings {
+                VStack(spacing: 6) {
+                    ForEach($macro.mappings) { $mapping in
+                        MacroMappingRow(mapping: $mapping, onDelete: {
+                            macro.mappings.removeAll { $0.id == mapping.id }
+                        })
+                    }
+
+                    Button(action: { macro.mappings.append(MacroMapping()) }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 8, weight: .bold))
+                            Text("Add mapping")
+                                .font(.system(size: 9))
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 2)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
-        .padding(8)
+        .padding(10)
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.4))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(accentColor.opacity(0.2), lineWidth: 1)
                 )
         )
         .contextMenu {
@@ -184,83 +225,93 @@ struct MacroControlView: View {
                     Button(color.displayName) { macro.color = color }
                 }
             }
-            Divider()
-            Button("Set Morph A") { engine.saveMorphA(macro.id) }
-            Button("Set Morph B") { engine.saveMorphB(macro.id) }
+            Button("Rename") { isRenaming = true }
             Divider()
             Button("Delete", role: .destructive) { engine.removeMacro(macro.id) }
         }
     }
 }
 
-// MARK: - Mappings Editor
+// MARK: - Mapping Row
 
-struct MacroMappingsEditor: View {
-    @Binding var macro: MacroControl
-    let engine: MacroEngine
-    let channel: UInt8
+struct MacroMappingRow: View {
+    @Binding var mapping: MacroMapping
+    let onDelete: () -> Void
 
     var body: some View {
-        VStack(spacing: 4) {
-            ForEach($macro.mappings) { $mapping in
-                HStack(spacing: 4) {
-                    VStack(spacing: 1) {
-                        Text("CC")
-                            .font(.system(size: 7))
-                            .foregroundStyle(.tertiary)
-                        TextField("", value: $mapping.destCCNumber, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 30)
-                            .font(.system(size: 9))
+        VStack(spacing: 3) {
+            HStack(spacing: 4) {
+                Text("CC \(mapping.destCCNumber)")
+                    .font(.system(size: 9, weight: .medium))
+                Spacer()
+                Picker("", selection: $mapping.curve) {
+                    ForEach(MacroCurve.allCases, id: \.self) { c in
+                        Text(c.displayName).tag(c)
                     }
+                }
+                .fixedSize()
+                .font(.system(size: 8))
 
-                    VStack(spacing: 1) {
-                        Text("Min")
-                            .font(.system(size: 7))
-                            .foregroundStyle(.tertiary)
-                        TextField("", value: $mapping.destMin, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 26)
-                            .font(.system(size: 9))
-                    }
+                Button(action: onDelete) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+            }
 
-                    VStack(spacing: 1) {
-                        Text("Max")
-                            .font(.system(size: 7))
-                            .foregroundStyle(.tertiary)
-                        TextField("", value: $mapping.destMax, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 26)
-                            .font(.system(size: 9))
-                    }
+            HStack(spacing: 4) {
+                TextField("CC", value: $mapping.destCCNumber, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 34)
+                    .font(.system(size: 9))
 
-                    Picker("", selection: $mapping.curve) {
-                        ForEach(MacroCurve.allCases, id: \.self) { c in
-                            Text(c.displayName).tag(c)
-                        }
-                    }
-                    .frame(width: 45)
+                Text("\(mapping.destMin)")
                     .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
 
-                    Button(action: { macro.mappings.removeAll { $0.id == mapping.id } }) {
-                        Image(systemName: "minus.circle")
-                            .font(.system(size: 9))
-                            .foregroundStyle(.red.opacity(0.6))
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.15))
+                            .frame(height: 4)
+                            .cornerRadius(2)
+
+                        Rectangle()
+                            .fill(Color.accentColor.opacity(0.4))
+                            .frame(
+                                width: geo.size.width * CGFloat(mapping.destMax - mapping.destMin) / 127.0,
+                                height: 4
+                            )
+                            .offset(x: geo.size.width * CGFloat(mapping.destMin) / 127.0)
+                            .cornerRadius(2)
                     }
-                    .buttonStyle(.plain)
+                    .frame(height: 4)
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 }
+                .frame(height: 12)
+
+                Text("\(mapping.destMax)")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.tertiary)
             }
 
-            Button(action: { macro.mappings.append(MacroMapping()) }) {
-                HStack(spacing: 2) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 8, weight: .bold))
-                    Text("Add")
-                        .font(.system(size: 9))
-                }
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                TextField("Min", value: $mapping.destMin, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 30)
+                    .font(.system(size: 8))
+                Spacer()
+                TextField("Max", value: $mapping.destMax, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 30)
+                    .font(.system(size: 8))
             }
-            .buttonStyle(.plain)
         }
+        .padding(6)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.3))
+        )
     }
 }
