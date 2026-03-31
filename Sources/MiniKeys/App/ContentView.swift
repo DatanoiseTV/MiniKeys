@@ -177,8 +177,9 @@ struct ContentView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 6)
         }
-        }
-        .frame(minWidth: 700)
+        .frame(maxWidth: .infinity)
+        } // HStack
+        .frame(minWidth: showMacroSidebar ? 900 : 700)
         .background(Color(nsColor: .underPageBackgroundColor))
         .onAppear {
             let monitor = KeyboardMonitor(keyboardState: keyboardState)
