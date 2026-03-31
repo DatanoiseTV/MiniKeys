@@ -12,6 +12,15 @@ struct PresetPanelView: View {
 
     var body: some View {
         HStack(spacing: 8) {
+            Button(action: {
+                layout = ControlLayout()
+                presetManager.currentPresetName = nil
+            }) {
+                Image(systemName: "doc.badge.plus")
+            }
+            .buttonStyle(.plain)
+            .help("New empty preset")
+
             Menu {
                 if presetManager.presets.isEmpty {
                     Text("No saved presets")
