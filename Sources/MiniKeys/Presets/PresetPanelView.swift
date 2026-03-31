@@ -6,6 +6,9 @@ struct PresetPanelView: View {
 
     @State private var showSaveDialog = false
     @State private var savePresetName = ""
+    @State private var showExportCSV = false
+    @State private var exportManufacturer = ""
+    @State private var exportDevice = ""
 
     var body: some View {
         HStack(spacing: 8) {
@@ -57,7 +60,12 @@ struct PresetPanelView: View {
             }) {
                 Image(systemName: "square.and.arrow.up")
             }
-            .help("Export preset to file")
+            .help("Export preset as JSON")
+
+            Button(action: { showExportCSV = true }) {
+                Image(systemName: "tablecells")
+            }
+            .help("Export as MIDI mapping CSV (pencilresearch format)")
         }
         .alert("Save Preset", isPresented: $showSaveDialog) {
             TextField("Preset name", text: $savePresetName)
@@ -69,6 +77,21 @@ struct PresetPanelView: View {
             Button("Cancel", role: .cancel) { savePresetName = "" }
         } message: {
             Text("Enter a name for this preset")
+        }
+        .alert("Export MIDI Mapping", isPresented: $showExportCSV) {
+            TextField("Manufacturer", text: $exportManufacturer)
+            TextField("Device name", text: $exportDevice)
+            Button("Export") {
+                guard !exportManufacturer.isEmpty, !exportDevice.isEmpty else { return }
+                DeviceExporter.saveCSV(
+                    layout: layout,
+                    manufacturer: exportManufacturer,
+                    device: exportDevice
+                )
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter manufacturer and device name for the CSV export")
         }
     }
 }
