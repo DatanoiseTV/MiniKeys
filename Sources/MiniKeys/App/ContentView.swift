@@ -10,8 +10,10 @@ struct ContentView: View {
     @State private var dbManager = DeviceDBManager()
     @State private var gamepadManager = GamepadManager()
     @State private var historyManager = CCHistoryManager()
+    @State private var macroEngine = MacroEngine()
     @State private var keyboardMonitor: KeyboardMonitor?
     @State private var showDeviceBrowser = false
+    @State private var showMacroSidebar = false
     @State private var learningControlID: UUID? = nil
     @State private var autoLearnMode = false
     @State private var autoLearnedCCs: Set<UInt8> = []
@@ -19,6 +21,7 @@ struct ContentView: View {
     var body: some View {
         @Bindable var engine = midiEngine
 
+        HStack(spacing: 0) {
         VStack(spacing: 0) {
             // Toolbar
             HStack(spacing: 12) {
@@ -110,6 +113,18 @@ struct ContentView: View {
                 .buttonStyle(.plain)
                 .help("All notes off")
 
+                Button(action: { withAnimation(.easeInOut(duration: 0.2)) { showMacroSidebar.toggle() } }) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "slider.horizontal.2.square")
+                            .font(.system(size: 10))
+                        Text("Macros")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundStyle(showMacroSidebar ? Color.accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Toggle macro controls sidebar")
+
                 PresetPanelView(presetManager: presetManager, layout: $layout)
             }
             .padding(.horizontal, 12)
@@ -155,12 +170,26 @@ struct ContentView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 6)
         }
+
+            // Macro sidebar
+            if showMacroSidebar {
+                Divider()
+                MacroSidebarView(engine: macroEngine, channel: midiEngine.channel)
+                    .transition(.move(edge: .trailing))
+            }
+        }
         .frame(minWidth: 700)
         .background(Color(nsColor: .underPageBackgroundColor))
         .onAppear {
             let monitor = KeyboardMonitor(keyboardState: keyboardState)
             monitor.start()
             keyboardMonitor = monitor
+
+            // Wire macro engine to send CCs
+            macroEngine.onSendCC = { [self] (cc: UInt8, value: UInt8, ch: UInt8) in
+                midiEngine.sendCC(controller: cc, value: value, channel: ch)
+                updateControlFromMIDI(cc: cc, value: value)
+            }
 
             // Wire gamepad axis changes to CC controls
             gamepadManager.onAxisChange = { [self] controlID, value in
